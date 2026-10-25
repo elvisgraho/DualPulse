@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DualPulse.App.ViewModels"
+        x:Class="DualPulse.App.Views.FirstStartWindow"
+        x:DataType="vm:FirstStartViewModel"
+        Title="Welcome to DualPulse"
+        Icon="/Assets/dualpulse.ico"
+        Width="440" SizeToContent="Height" CanResize="False" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource Bg}">
+  <StackPanel Spacing="12" Margin="24">
+    <TextBlock Classes="caption" Text="GET STARTED" />
+    <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="How should games see your controller?" />
+    <ItemsControl ItemsSource="{Binding Choices}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Spacing="8" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:SetupChoice">
+          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8"
+                  Command="{Binding $parent[ItemsControl].((vm:FirstStartViewModel)DataContext).ChooseCommand}"
+                  CommandParameter="{Binding}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding Label}" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Detail}" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Grid ColumnDefinitions="*,8,Auto" IsVisible="{Binding HasChosen}">
+      <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding DriverText}" />
+      <Button Grid.Column="2" Content="Get driver" Command="{Binding GetDriverCommand}" IsVisible="{Binding DriverMissing}" />
+    </Grid>
+    <TextBlock Classes="caption" TextWrapping="Wrap" Text="You can change this any time on the Emulation page." />
+    <Button HorizontalAlignment="Right" Content="Done" Command="{Binding DoneCommand}" />
+  </StackPanel>
+</Window>

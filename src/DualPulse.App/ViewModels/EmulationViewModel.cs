@@ -13,12 +13,6 @@ public sealed record EmulationChoice(string Label, PadKind? Kind);
 // installed here.
 public sealed partial class EmulationViewModel : ObservableObject
 {
-	private const string ViGEmBusReleases = "https://github.com/nefarius/ViGEmBus/releases";
-
-	private const string HidHideReleases = "https://github.com/nefarius/HidHide/releases";
-
-	private const string UsbIpReleases = "https://github.com/vadimgrn/usbip-win2/releases";
-
 	private readonly ISettingsService settings;
 
 	private readonly IEmulationService emulation;
@@ -172,13 +166,13 @@ public sealed partial class EmulationViewModel : ObservableObject
 	}
 
 	[RelayCommand]
-	private void GetViGEmBus() => Open(ViGEmBusReleases);
+	private void GetViGEmBus() => Open(DriverPages.ViGEmBus);
 
 	[RelayCommand]
-	private void GetHidHide() => Open(HidHideReleases);
+	private void GetHidHide() => Open(DriverPages.HidHide);
 
 	[RelayCommand]
-	private void GetUsbIp() => Open(UsbIpReleases);
+	private void GetUsbIp() => Open(DriverPages.UsbIpWin2);
 
 	private void Open(string target)
 	{

@@ -58,6 +58,7 @@ public partial class App : Application
 			if (!minimized)
 			{
 				window.Show();
+				ShowFirstStart();
 			}
 			desktop.Exit += (_, _) =>
 			{
@@ -124,6 +125,18 @@ public partial class App : Application
 			window.WindowState = WindowState.Normal;
 		}
 		window.Activate();
+		ShowFirstStart();
+	}
+
+	// The first-start window, over the main window, until it has been closed once.
+	private void ShowFirstStart()
+	{
+		if (window == null || host?.Services.GetRequiredService<FirstStartViewModel>() is not { IsVisible: true } guide
+			|| window.OwnedWindows.OfType<FirstStartWindow>().Any())
+		{
+			return;
+		}
+		_ = new FirstStartWindow(guide).ShowDialog(window);
 	}
 
 	private void OnTrayClicked(object? sender, EventArgs e)

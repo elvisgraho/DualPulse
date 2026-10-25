@@ -87,6 +87,17 @@ public sealed class SettingsViewModelTests
 	}
 
 	[Fact]
+	public async Task Settings_CopyDiagnostics_SaysWhenItCouldNotCopy()
+	{
+		SettingsViewModel viewModel = new(settings, @"C:\data\logs", opened.Add, diagnostics: () => "report",
+			copy: _ => throw new InvalidOperationException("No window to copy from"));
+
+		await viewModel.CopyDiagnosticsCommand.ExecuteAsync(null);
+
+		Assert.Equal("Couldn't copy. Try again.", viewModel.DiagnosticsStatus);
+	}
+
+	[Fact]
 	public void Settings_OpenFails_DoesNotThrow()
 	{
 		SettingsViewModel viewModel = new(settings, @"C:\data\logs", _ => throw new System.ComponentModel.Win32Exception("No application is associated"));

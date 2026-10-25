@@ -102,6 +102,7 @@ internal static class Hosting
 		builder.Services.AddHostedService(s => s.GetRequiredService<StartupService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<PowerService>());
 		builder.Services.AddSingleton<ProfileSelection>();
+		builder.Services.AddSingleton(s => new FirstStartViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IVirtualPadBackend>()));
 		builder.Services.AddSingleton<HomeViewModel>();
 		builder.Services.AddSingleton<LightingViewModel>();
 		builder.Services.AddSingleton<TriggersViewModel>();
@@ -123,12 +124,13 @@ internal static class Hosting
 		return builder.Build();
 	}
 
+	// Through DualPulse's own window (the app keeps it itself; the desktop lifetime's MainWindow stays unset).
 	private static async Task CopyToClipboard(string text)
 	{
-		if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
-			{ MainWindow.Clipboard: { } clipboard })
-		{
-			await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
-		}
+		Avalonia.Input.Platform.IClipboard clipboard =
+			(Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)
+			?.Windows.OfType<ShellWindow>().FirstOrDefault()?.Clipboard
+			?? throw new InvalidOperationException("No window to copy from");
+		await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
 	}
 }
