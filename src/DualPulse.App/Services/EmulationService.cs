@@ -117,6 +117,8 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	// Deadzone and start point for L2 and R2, read on every report; replaced as a whole when settings change.
 	private volatile TriggerRanges ranges = TriggerRanges.None;
 
+	private volatile IReadOnlyList<ButtonRemap> remaps = [];
+
 	// padWorker: runs pad creation and disposal (tests pass an inline runner); by default a dedicated thread.
 	public EmulationService(IControllerService controller, IVirtualPadBackend backend, ISettingsService settings, IRumbleService rumble, ILogger<EmulationService> logger,
 		IPcControlService? pcControl = null, IGyroService? gyro = null, IProfileService? profiles = null, TimeProvider? time = null,
@@ -155,6 +157,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			settings.Changed += OnSettingsChanged;
 		}
 		ranges = TriggerRanges.From(profiles?.Effective ?? settings.Current);
+		remaps = settings.Current.ButtonRemaps ?? [];
 		if (controller.Session is { } current)
 		{
 			OnSessionStarted(current);
@@ -237,6 +240,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	private void OnSettingsChanged(AppSettings current)
 	{
 		ranges = TriggerRanges.From(current);
+		remaps = current.ButtonRemaps ?? [];
 		Update(() =>
 		{
 			if (kind != current.Emulation)
@@ -533,6 +537,11 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 				Buttons buttons = snapshot.Buttons & ~(Buttons.L2 | Buttons.R2);
 				buttons |= (l2 > 0 ? Buttons.L2 : Buttons.None) | (r2 > 0 ? Buttons.R2 : Buttons.None);
 				snapshot = snapshot with { L2 = l2, R2 = r2, Buttons = buttons };
+			}
+			IReadOnlyList<ButtonRemap> remapped = remaps;
+			if (remapped.Count > 0)
+			{
+				snapshot = snapshot with { Buttons = ButtonRemap.Apply(snapshot.Buttons, remapped) };
 			}
 			// A virtual DualSense carries motion, touch and battery too, so every report goes out.
 			PadInput current = new(snapshot.LeftX, snapshot.LeftY, snapshot.RightX, snapshot.RightY, snapshot.L2, snapshot.R2, snapshot.Buttons);

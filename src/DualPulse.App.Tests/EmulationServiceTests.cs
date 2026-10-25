@@ -3,6 +3,7 @@ using Microsoft.Extensions.Time.Testing;
 using DualPulse.App.Services;
 using DualPulse.Core.Audio;
 using DualPulse.Core.Devices;
+using DualPulse.Core.Protocol;
 using DualPulse.Core.Tests;
 using DualPulse.Emulation;
 using Xunit;
@@ -223,6 +224,20 @@ public sealed class EmulationServiceTests : IDisposable
 		device.Latest.Feed(report);
 
 		TestReports.WaitUntil(() => pad.LastSubmitted?.RightX > 128);
+	}
+
+	[Fact]
+	public async Task Emulation_RemappedButton_ReachesTheGameAsItsTarget()
+	{
+		settings.Update(s => s with { ButtonRemaps = [new ButtonRemap(Buttons.Cross, Buttons.Circle)] });
+		FakeDevice device = transport.Add(FakeHidTransport.UsbPath);
+		await controller.StartAsync(TestContext.Current.CancellationToken);
+		FakePad pad = backend.Created[^1];
+
+		device.Latest.Feed(TestReports.Fixture("cross-usb"));
+
+		TestReports.WaitUntil(() => pad.LastSubmitted?.Buttons.HasFlag(Buttons.Circle) == true);
+		Assert.False(pad.LastSubmitted!.Value.Buttons.HasFlag(Buttons.Cross));
 	}
 
 	[Fact]

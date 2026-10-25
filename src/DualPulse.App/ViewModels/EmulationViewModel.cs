@@ -1,7 +1,8 @@
-using System.Diagnostics;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DualPulse.App.Services;
+using DualPulse.Core.Protocol;
 using DualPulse.Emulation;
 
 namespace DualPulse.App.ViewModels;
@@ -45,9 +46,14 @@ public sealed partial class EmulationViewModel : ObservableObject
 			OnPropertyChanged(nameof(ShowDualSenseHint));
 			OnPropertyChanged(nameof(ShowViGEmBus));
 			OnPropertyChanged(nameof(ShowUsbIp));
+			OnPropertyChanged(nameof(ShowRemaps));
 			OnPropertyChanged(nameof(HideController));
 			OnPropertyChanged(nameof(GameSoundOnController));
 		});
+		foreach (ButtonRemap remap in settings.Current.ButtonRemaps ?? [])
+		{
+			Remaps.Add(new RemapRow(remap, SaveRemaps, RemoveRemap));
+		}
 		emulation.StatusChanged += () => ui.Run(Refresh);
 		hidHide.StatusChanged += () => ui.Run(Refresh);
 		Refresh();
@@ -96,6 +102,11 @@ public sealed partial class EmulationViewModel : ObservableObject
 
 	// ViGEmBus only matters for the Xbox 360 and DualShock 4 choices.
 	public bool ShowViGEmBus => settings.Current.Emulation is PadKind.Xbox360 or PadKind.DualShock4;
+
+	// Buttons sent to games as other buttons; only a virtual controller can change them.
+	public ObservableCollection<RemapRow> Remaps { get; } = [];
+
+	public bool ShowRemaps => settings.Current.Emulation != null;
 
 	// usbip-win2 only matters for the virtual DualSense.
 	public bool ShowUsbIp => settings.Current.Emulation == PadKind.DualSense;
@@ -168,6 +179,26 @@ public sealed partial class EmulationViewModel : ObservableObject
 	public async Task RefreshSteamAsync()
 	{
 		ShowSteamHint = await Task.Run(steamRunning);
+	}
+
+	// A new row for the first button not changed yet, sending itself (no change) until a target is picked.
+	[RelayCommand]
+	private void AddRemap()
+	{
+		Core.Protocol.Buttons unused = RemapRow.Buttons.Select(c => c.Button).FirstOrDefault(b => Remaps.All(r => r.From.Button != b), RemapRow.Buttons[0].Button);
+		Remaps.Add(new RemapRow(new ButtonRemap(unused, unused), SaveRemaps, RemoveRemap));
+		SaveRemaps();
+	}
+
+	private void RemoveRemap(RemapRow row)
+	{
+		Remaps.Remove(row);
+		SaveRemaps();
+	}
+
+	private void SaveRemaps()
+	{
+		settings.Update(s => s with { ButtonRemaps = [.. Remaps.Select(r => r.ToRemap())] });
 	}
 
 	[RelayCommand]

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Time.Testing;
 using DualPulse.App.Services;
 using DualPulse.App.ViewModels;
 using DualPulse.Core.Devices;
+using DualPulse.Core.Protocol;
 using DualPulse.Core.Tests;
 using DualPulse.Emulation;
 using Xunit;
@@ -142,6 +143,46 @@ public sealed class EmulationViewModelTests
 		await viewModel.RefreshSteamAsync();
 
 		Assert.Equal(running, viewModel.ShowSteamHint);
+	}
+
+	[Theory]
+	[InlineData(PadKind.Xbox360, true)]
+	[InlineData(PadKind.DualSense, true)]
+	[InlineData(null, false)]
+	public void Remaps_ShowOnlyWithAVirtualController(PadKind? kind, bool shown)
+	{
+		settings.Update(s => s with { Emulation = kind });
+
+		Assert.Equal(shown, CreateViewModel().ShowRemaps);
+	}
+
+	[Fact]
+	public void Remaps_AddChangeAndRemove_AreSaved()
+	{
+		EmulationViewModel viewModel = CreateViewModel();
+		Assert.Empty(viewModel.Remaps);
+
+		viewModel.AddRemapCommand.Execute(null);
+		RemapRow row = Assert.Single(viewModel.Remaps);
+		row.From = row.FromChoices.Single(c => c.Button == Buttons.Create);
+		row.To = row.ToChoices.Single(c => c.Label == "Nothing");
+		Assert.Equal([new ButtonRemap(Buttons.Create, Buttons.None)], settings.Current.ButtonRemaps);
+
+		row.RemoveCommand.Execute(null);
+		Assert.Empty(viewModel.Remaps);
+		Assert.Empty(settings.Current.ButtonRemaps ?? []);
+	}
+
+	[Fact]
+	public void Remaps_OfferTheDigitalButtons_AndNothingAsATarget()
+	{
+		EmulationViewModel viewModel = CreateViewModel();
+		viewModel.AddRemapCommand.Execute(null);
+		RemapRow row = viewModel.Remaps[0];
+
+		Assert.Contains(row.FromChoices, c => c.Label == "Cross");
+		Assert.DoesNotContain(row.FromChoices, c => c.Button is Buttons.L2 or Buttons.R2);
+		Assert.Equal("Nothing", row.ToChoices[^1].Label);
 	}
 
 	[Fact]

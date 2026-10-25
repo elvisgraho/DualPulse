@@ -57,6 +57,43 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="card" IsVisible="{Binding ShowRemaps}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="caption" Text="BUTTONS IN GAMES" />
+          <TextBlock Classes="secondary" Text="Buttons work as usual." IsVisible="{Binding !Remaps.Count}" />
+          <ItemsControl ItemsSource="{Binding Remaps}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RemapRow">
+                <Grid ColumnDefinitions="*,12,Auto,12,*,8,Auto">
+                  <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding FromChoices}" SelectedItem="{Binding From}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ButtonChoice">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Grid.Column="2" VerticalAlignment="Center" Classes="secondary" Text="sends" />
+                  <ComboBox Grid.Column="4" HorizontalAlignment="Stretch" ItemsSource="{Binding ToChoices}" SelectedItem="{Binding To}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ButtonChoice">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Grid.Column="6" Content="Remove" Command="{Binding RemoveCommand}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Content="Change a button" Command="{Binding AddRemapCommand}" />
+        </StackPanel>
+      </Border>
+
       <Border Classes="card">
         <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="HIDE THE DUALSENSE" />
