@@ -44,6 +44,8 @@
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Status" />
             <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" />
           </Grid>
+          <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowSteamHint}"
+                     Text="Steam is running. If a game ignores your triggers or lights, turn off Steam Input for it: in Steam, the game's Properties, Controller." />
           <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowViGEmBus}">
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding DriverText}" />
             <Button Grid.Column="2" Content="Get ViGEmBus" Command="{Binding GetViGEmBusCommand}" IsVisible="{Binding DriverMissing}" />

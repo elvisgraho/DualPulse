@@ -70,6 +70,17 @@ internal static class PlatformServices
 		return OperatingSystem.IsWindows() ? HidHideDriver.DosDeviceNameOf(path) ?? path : path;
 	}
 
+	// Whether the Steam client is running (its Steam Input can take the controller from games).
+	public static bool SteamRunning()
+	{
+		System.Diagnostics.Process[] steam = System.Diagnostics.Process.GetProcessesByName("steam");
+		foreach (System.Diagnostics.Process process in steam)
+		{
+			process.Dispose();
+		}
+		return steam.Length > 0;
+	}
+
 	// The installed ViGEmBus driver's version, shown on the emulation page; null when it is missing or off Windows.
 	public static string? ViGEmBusVersion()
 	{

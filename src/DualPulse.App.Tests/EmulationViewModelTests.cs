@@ -131,6 +131,18 @@ public sealed class EmulationViewModelTests
 		Assert.False(viewModel.UsbIpMissing);
 	}
 
+	[Theory]
+	[InlineData(true)]
+	[InlineData(false)]
+	public void SteamRunning_ShowsTheSteamInputHint(bool running)
+	{
+		EmulationViewModel viewModel = new(settings, emulation, backend, hidHide, () => "1.22.0.0", opened.Add, () => running);
+
+		viewModel.Refresh();
+
+		Assert.Equal(running, viewModel.ShowSteamHint);
+	}
+
 	[Fact]
 	public void DualSense_StartFailure_WithUsbIpWin2_SaysItCouldNotPlugIn()
 	{

@@ -31,11 +31,14 @@ public sealed partial class EmulationViewModel : ObservableObject
 
 	private readonly Action<string> open;
 
+	private readonly Func<bool> steamRunning;
+
 	private readonly UiContext ui = new();
 
 	public EmulationViewModel(ISettingsService settings, IEmulationService emulation, IVirtualPadBackend backend, IHidHideService hidHide,
-		Func<string?> driverVersion, Action<string>? open = null)
+		Func<string?> driverVersion, Action<string>? open = null, Func<bool>? steamRunning = null)
 	{
+		this.steamRunning = steamRunning ?? (() => false);
 		this.settings = settings;
 		this.emulation = emulation;
 		this.backend = backend;
@@ -78,6 +81,10 @@ public sealed partial class EmulationViewModel : ObservableObject
 
 	[ObservableProperty]
 	public partial bool UsbIpMissing { get; private set; }
+
+	// Steam is running: its Steam Input can take the controller from a game, so the page says how to turn it off.
+	[ObservableProperty]
+	public partial bool ShowSteamHint { get; private set; }
 
 	[ObservableProperty]
 	public partial string HideStatusText { get; private set; } = "";
@@ -149,6 +156,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 		DriverMissing = !backend.IsAvailable;
 		string? version = driverVersion();
 		DriverText = DriverMissing ? "ViGEmBus isn't installed" : version == null ? "ViGEmBus installed" : $"ViGEmBus {version} installed";
+		ShowSteamHint = steamRunning();
 		UsbIpMissing = !backend.IsAvailableFor(PadKind.DualSense);
 		UsbIpText = UsbIpMissing ? "usbip-win2 isn't installed" : "usbip-win2 installed";
 		HidHideMissing = hidHide.Status is HidHideStatus.NotInstalled or HidHideStatus.NotAttached;
