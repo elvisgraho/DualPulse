@@ -150,7 +150,6 @@ public sealed partial class EmulationViewModel : ObservableObject
 		DriverMissing = !backend.IsAvailable;
 		string? version = driverVersion();
 		DriverText = DriverMissing ? "ViGEmBus isn't installed" : version == null ? "ViGEmBus installed" : $"ViGEmBus {version} installed";
-		ShowSteamHint = steamRunning();
 		UsbIpMissing = !backend.IsAvailableFor(PadKind.DualSense);
 		UsbIpText = UsbIpMissing ? "usbip-win2 isn't installed" : "usbip-win2 installed";
 		HidHideMissing = hidHide.Status is HidHideStatus.NotInstalled or HidHideStatus.NotAttached;
@@ -163,6 +162,12 @@ public sealed partial class EmulationViewModel : ObservableObject
 			HidHideStatus.NotAttached => "HidHide isn't set up for controllers. Reinstall HidHide.",
 			_ => "Other apps and games can see the DualSense."
 		};
+	}
+
+	// Finding the Steam process takes a moment, so it runs off the UI thread.
+	public async Task RefreshSteamAsync()
+	{
+		ShowSteamHint = await Task.Run(steamRunning);
 	}
 
 	[RelayCommand]

@@ -91,6 +91,39 @@ public sealed class UpdateServiceTests
 	}
 
 	[Fact]
+	public async Task TwoChecksAtOnce_ShowItOnce()
+	{
+		TaskCompletionSource<string?> answer = new();
+		feed.Answer = answer.Task;
+		settings.Update(s => s with { CheckForUpdates = true });
+		using UpdateService service = CreateService();
+
+		Task first = service.CheckAsync();
+		Task second = service.CheckAsync();
+		answer.SetResult(Latest);
+		await Task.WhenAll(first, second);
+
+		Assert.Equal(1, notifier.Count);
+	}
+
+	[Fact]
+	public async Task AfterARestart_TheSameVersionDoesNotPopUpAgain()
+	{
+		feed.Json = Latest;
+		settings.Update(s => s with { CheckForUpdates = true });
+		using (UpdateService before = CreateService())
+		{
+			await before.CheckAsync();
+		}
+		using UpdateService after = CreateService();
+
+		await after.CheckAsync();
+
+		Assert.Equal(1, notifier.Count);
+		Assert.Equal(new Version(0, 2, 0), after.Available!.Version);
+	}
+
+	[Fact]
 	public async Task TurningItOn_ChecksRightAway()
 	{
 		feed.Json = Latest;
@@ -123,10 +156,13 @@ internal sealed class FakeReleaseFeed : IReleaseFeed
 
 	public int Requests => Volatile.Read(ref requests);
 
+	// When set, every request waits for this answer instead of Json.
+	public Task<string?>? Answer { get; set; }
+
 	public Task<string?> LatestAsync(CancellationToken cancellationToken)
 	{
 		Interlocked.Increment(ref requests);
-		return Task.FromResult(Json);
+		return Answer ?? Task.FromResult(Json);
 	}
 
 	public async Task WaitForRequests(int count)

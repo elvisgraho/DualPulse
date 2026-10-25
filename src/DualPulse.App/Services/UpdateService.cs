@@ -43,7 +43,8 @@ public interface IUpdateService
 }
 
 // Opt-in (CheckForUpdates): shortly after start and then once a day, asks GitHub for the latest release and, when it is
-// newer than this build, says so once with a pop-up and on the Settings page. Nothing is downloaded.
+// newer than this build, says so on the Settings page and, once per version (NotifiedUpdate), with a pop-up. Nothing is
+// downloaded.
 public sealed class UpdateService : IHostedService, IUpdateService, IDisposable
 {
 	public static readonly TimeSpan FirstCheck = TimeSpan.FromSeconds(30);
@@ -61,6 +62,8 @@ public sealed class UpdateService : IHostedService, IUpdateService, IDisposable
 	private readonly ITimer timer;
 
 	private readonly CancellationTokenSource stopping = new();
+
+	private readonly object gate = new();
 
 	private ReleaseInfo? available;
 
@@ -122,13 +125,28 @@ public sealed class UpdateService : IHostedService, IUpdateService, IDisposable
 		{
 			return;
 		}
-		if (json == null || ReleaseInfo.Parse(json) is not { } release || release.Version <= current
-			|| (Available is { } known && release.Version <= known.Version))
+		if (json == null || ReleaseInfo.Parse(json) is not { } release || release.Version <= current)
 		{
 			return;
 		}
-		Volatile.Write(ref available, release);
-		notifier.Show($"DualPulse {release.Version} is out", "Download it from Settings.");
+		bool popUp;
+		lock (gate)
+		{
+			if (Available is { } known && release.Version <= known.Version)
+			{
+				return;
+			}
+			Volatile.Write(ref available, release);
+			popUp = !Version.TryParse(settings.Current.NotifiedUpdate, out Version? notified) || release.Version > notified;
+			if (popUp)
+			{
+				settings.Update(s => s with { NotifiedUpdate = release.Version.ToString() });
+			}
+		}
+		if (popUp)
+		{
+			notifier.Show($"DualPulse {release.Version} is out", "Download it from Settings.");
+		}
 		AvailableChanged?.Invoke();
 	}
 }

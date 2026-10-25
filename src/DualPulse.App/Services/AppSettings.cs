@@ -121,7 +121,7 @@ public sealed record GyroSettings(
 // hid through HidHide, so exactly those are restored when hiding is turned off (also after a crash).
 // GameSoundOnController: a game driving the virtual DualSense also plays its controller-speaker sound on the real one.
 // CheckForUpdates: look up the latest release on GitHub (off until the user turns it on).
-// SetupDone: the first-start card on Home was closed.
+// SetupDone: the first-start window was closed. NotifiedUpdate: the release version last announced with a pop-up.
 public sealed record AppSettings(
 	int Version = 1,
 	PadKind? Emulation = PadKind.Xbox360,
@@ -142,7 +142,8 @@ public sealed record AppSettings(
 	ControllerAudioSettings? Audio = null,
 	bool GameSoundOnController = false,
 	bool CheckForUpdates = false,
-	bool SetupDone = false)
+	bool SetupDone = false,
+	string? NotifiedUpdate = null)
 {
 	public static readonly Rgb AccentLightbar = new(0xC9, 0xA8, 0x6A);
 

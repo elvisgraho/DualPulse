@@ -168,7 +168,8 @@ public sealed partial class SettingsViewModel : ObservableObject
 		}
 		try
 		{
-			await copy(diagnostics());
+			// Reading the log takes a moment, so the report is built off the UI thread.
+			await copy(await Task.Run(diagnostics));
 			return true;
 		}
 		catch (Exception exception) when (exception is InvalidOperationException or System.Runtime.InteropServices.COMException)

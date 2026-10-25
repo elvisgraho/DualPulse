@@ -17,7 +17,11 @@ public partial class EmulationView : UserControl
 		{
 			if (IsEffectivelyVisible)
 			{
-				(DataContext as EmulationViewModel)?.Refresh();
+				if (DataContext is EmulationViewModel page)
+				{
+					page.Refresh();
+					_ = page.RefreshSteamAsync();
+				}
 			}
 		};
 	}
@@ -26,6 +30,10 @@ public partial class EmulationView : UserControl
 	{
 		base.OnAttachedToVisualTree(e);
 		clock.Start();
+		if (DataContext is EmulationViewModel page)
+		{
+			_ = page.RefreshSteamAsync();
+		}
 	}
 
 	protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

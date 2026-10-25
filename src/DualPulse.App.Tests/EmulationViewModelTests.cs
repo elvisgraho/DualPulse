@@ -134,11 +134,12 @@ public sealed class EmulationViewModelTests
 	[Theory]
 	[InlineData(true)]
 	[InlineData(false)]
-	public void SteamRunning_ShowsTheSteamInputHint(bool running)
+	public async Task SteamRunning_ShowsTheSteamInputHint(bool running)
 	{
 		EmulationViewModel viewModel = new(settings, emulation, backend, hidHide, () => "1.22.0.0", opened.Add, () => running);
 
-		viewModel.Refresh();
+		// Looked up off the UI thread: finding a process takes a moment.
+		await viewModel.RefreshSteamAsync();
 
 		Assert.Equal(running, viewModel.ShowSteamHint);
 	}
