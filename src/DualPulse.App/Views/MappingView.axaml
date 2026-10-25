@@ -100,7 +100,8 @@
               <DataTemplate x:DataType="vm:ButtonRow">
                 <Grid ColumnDefinitions="*,16,Auto" Margin="0,4">
                   <StackPanel VerticalAlignment="Center" Spacing="2">
-                    <TextBlock Text="{Binding Label}" />
+                    <!-- A fixed button's name looks off like its dropdown; the note saying why stays readable. -->
+                    <TextBlock Text="{Binding Label}" IsEnabled="{Binding IsEditable}" />
                     <TextBlock Classes="caption" Text="{Binding Note}" IsVisible="{Binding !IsEditable}" />
                   </StackPanel>
                   <ComboBox Grid.Column="2" MinWidth="200" IsEnabled="{Binding IsEditable}"

@@ -207,4 +207,9 @@
   <Style Selector="Slider">
     <Setter Property="Foreground" Value="{StaticResource Accent}" />
   </Style>
+
+  <!-- A label in a row or card that is switched off looks off too (last, so it wins over the text styles above). -->
+  <Style Selector="TextBlock:disabled">
+    <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+  </Style>
 </Styles>

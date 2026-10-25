@@ -97,14 +97,14 @@
       <Border Classes="card">
         <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="HIDE THE DUALSENSE" />
-          <Grid ColumnDefinitions="*,16,Auto">
+          <Grid ColumnDefinitions="*,16,Auto" IsEnabled="{Binding CanToggleHide}">
             <StackPanel Spacing="2">
               <TextBlock Text="Hide my DualSense from other apps" />
               <TextBlock Classes="caption" TextWrapping="Wrap"
                          Text="Games then see only the virtual controller. Stays on after DualPulse closes." />
             </StackPanel>
             <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center"
-                          IsChecked="{Binding HideController}" IsEnabled="{Binding CanToggleHide}" />
+                          IsChecked="{Binding HideController}" />
           </Grid>
           <Grid ColumnDefinitions="*,16,Auto">
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding HideStatusText}" />

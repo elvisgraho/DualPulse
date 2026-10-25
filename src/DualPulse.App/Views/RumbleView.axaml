@@ -31,10 +31,10 @@
       <Border Classes="card">
         <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="GAME RUMBLE" />
-          <Grid ColumnDefinitions="Auto,16,*,16,48">
+          <Grid ColumnDefinitions="Auto,16,*,16,48" IsEnabled="{Binding !Muted}">
             <TextBlock VerticalAlignment="Center" Text="Strength" />
             <Slider Grid.Column="2" Minimum="0" Maximum="200" TickFrequency="10" IsSnapToTickEnabled="True"
-                    Value="{Binding Strength}" IsEnabled="{Binding !Muted}" />
+                    Value="{Binding Strength}" />
             <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
                        Text="{Binding Strength, StringFormat={}{0}%}" />
           </Grid>
