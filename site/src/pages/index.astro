@@ -1,0 +1,247 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const repo = 'https://github.com/elvisgraho/DualPulse';
+const download = `${repo}/releases/latest`;
+const title = 'DualPulse: free DualSense app for PC with Bluetooth haptics and adaptive triggers';
+const description =
+  'Free, open-source DualSense (PS5 controller) app for Windows: haptic feedback, adaptive triggers and the controller speaker over Bluetooth, Xbox 360 / DualShock 4 / DualSense emulation. A free DSX alternative.';
+const canonical = new URL(base, Astro.site).href;
+
+const features = [
+  ['Wireless haptics and triggers', 'Games with DualSense support get adaptive triggers, haptics and speaker sound over Bluetooth, through a virtual DualSense.'],
+  ['Haptic feedback over Bluetooth', 'Game rumble plays as DualSense haptics, and PC sound can be felt in the grips.'],
+  ['Every game works', 'Xbox 360, DualShock 4 or DualSense emulation, with your real controller hidden from games.'],
+  ['Per-game settings', 'Adaptive triggers and gyro aiming switch automatically with the game in front.'],
+  ['PC control', 'Touchpad as a mouse, buttons as keys and media keys, a window switcher.'],
+  ['Lights and more', 'Lightbar colours, battery on the player LEDs, a real mic mute button, DSX mods.'],
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'DualPulse',
+  description,
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'Windows 10, Windows 11',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  downloadUrl: download,
+  url: canonical,
+  license: `${repo}/blob/main/LICENSE`,
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" href={`${base}icon.png`} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(`${base}home.png`, Astro.site).href} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body>
+    <header class="wrap nav">
+      <a class="brand" href={base}><img src={`${base}icon.png`} alt="" width="28" height="28" />DualPulse</a>
+      <a href={repo}>GitHub</a>
+    </header>
+
+    <main>
+      <section class="wrap hero">
+        <h1>Your DualSense, fully working on PC. <span>Even wireless.</span></h1>
+        <p class="lead">
+          Adaptive triggers, haptic feedback and the controller speaker over Bluetooth, plus emulation so every game
+          works. Free and open source.
+        </p>
+        <div class="actions">
+          <a class="button primary" href={download}>Download for Windows</a>
+          <a class="button" href={repo}>View source</a>
+        </div>
+        <p class="small">Windows 10 and 11 · No install · MIT license</p>
+      </section>
+
+      <section class="wrap">
+        <img class="shot" src={`${base}home.png`} alt="DualPulse home screen showing the connected controller" width="1249" height="825" />
+      </section>
+
+      <section class="wrap">
+        <h2>Features</h2>
+        <ul class="grid">
+          {features.map(([name, text]) => (
+            <li class="card">
+              <h3>{name}</h3>
+              <p>{text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="wrap">
+        <h2>Get started</h2>
+        <ol class="steps">
+          <li>
+            <a href={download}>Download the zip</a>, unzip it and run <code>DualPulse.exe</code>. If Windows says it
+            protected your PC, click <b>More info</b>, then <b>Run anyway</b>.
+          </li>
+          <li>Connect your DualSense by cable or Bluetooth.</li>
+          <li>
+            Pick what games see on the Emulation page. DualPulse links the free driver a mode needs (ViGEmBus,
+            usbip-win2 or HidHide).
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="wrap">
+      <p>
+        Originally based on DualSenseX by Paliverse; rewritten from scratch. "DualSense" and "PS5" are trademarks of
+        Sony Interactive Entertainment. DualPulse is not affiliated with Sony or Paliverse.
+      </p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #0c0e11;
+    --surface: #15181d;
+    --border: #262a31;
+    --text: #e8e6e3;
+    --muted: #9aa0a8;
+    --accent: #c9a86a;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  a {
+    color: var(--accent);
+  }
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  .nav a {
+    text-decoration: none;
+    color: var(--text);
+  }
+  .brand {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-weight: 600;
+  }
+  .hero {
+    padding-top: 48px;
+    padding-bottom: 40px;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.15;
+    margin: 0 0 16px;
+    max-width: 16ch;
+  }
+  h1 span {
+    color: var(--accent);
+  }
+  .lead {
+    color: var(--muted);
+    font-size: 1.15rem;
+    max-width: 56ch;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 28px 0 12px;
+  }
+  .button {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1a1407;
+  }
+  .small {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .shot {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  h2 {
+    margin: 56px 0 16px;
+  }
+  .grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h3 {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+  }
+  .card p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .steps {
+    padding-left: 20px;
+    color: var(--muted);
+  }
+  .steps li {
+    margin-bottom: 10px;
+  }
+  code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    padding-bottom: 40px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>

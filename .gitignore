@@ -20,3 +20,6 @@ TODO.md
 
 # Release builds (tools/publish.ps1)
 artifacts/
+
+# Local tool settings
+.claude/
