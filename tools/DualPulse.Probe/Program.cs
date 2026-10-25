@@ -423,6 +423,50 @@ if (args.Length >= 1 && args[0] == "feature-reports")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "sticks")
+{
+	// Samples the real DualSense's sticks on USB for N seconds (default 5) and prints each axis's range, to see how far
+	// a resting stick sits from centre (128) and how much it wobbles. Read-only, shared with a running DualPulse.
+	int seconds = args.Length >= 2 && int.TryParse(args[1], out int s) ? s : 5;
+	HidDevice? real = DeviceList.Local.GetHidDevices(SonyVendorId).FirstOrDefault(d => productIds.Contains(d.ProductID)
+		&& !DualPulse.Core.Devices.ControllerDiscovery.IsBluetooth(d.DevicePath)
+		&& string.IsNullOrEmpty(SafeSerial(d)));
+	if (real == null)
+	{
+		Console.Error.WriteLine("No real DualSense on USB.");
+		return 1;
+	}
+	using HidStream stream = real.Open();
+	stream.ReadTimeout = 1000;
+	byte[] report = new byte[real.GetMaxInputReportLength()];
+	int[] min = [255, 255, 255, 255];
+	int[] max = [0, 0, 0, 0];
+	Dictionary<(int, int), int> leftRest = [];
+	int samples = 0;
+	DateTime end = DateTime.UtcNow.AddSeconds(seconds);
+	while (DateTime.UtcNow < end)
+	{
+		if (stream.Read(report) < 5 || report[0] != 0x01)
+		{
+			continue;
+		}
+		samples++;
+		for (int axis = 0; axis < 4; axis++)
+		{
+			min[axis] = Math.Min(min[axis], report[1 + axis]);
+			max[axis] = Math.Max(max[axis], report[1 + axis]);
+		}
+		leftRest[(report[1], report[2])] = leftRest.GetValueOrDefault((report[1], report[2])) + 1;
+	}
+	string[] names = ["LX", "LY", "RX", "RY"];
+	Console.WriteLine($"{samples} reports in {seconds} s");
+	for (int axis = 0; axis < 4; axis++)
+	{
+		Console.WriteLine($"{names[axis]} {min[axis]}..{max[axis]} (centre 128; off by up to {Math.Max(Math.Abs(min[axis] - 128), Math.Abs(max[axis] - 128))})");
+	}
+	Console.WriteLine("left stick positions seen: " + string.Join(", ", leftRest.OrderByDescending(p => p.Value).Take(6).Select(p => $"({p.Key.Item1},{p.Key.Item2}) x{p.Value}")));
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "usb-descriptors")
 {
 	// Reads the real DualSense's USB descriptors through its hub (read-only): device, configuration, strings, HID report.
