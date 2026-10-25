@@ -1,5 +1,6 @@
 using DualPulse.App.Services;
 using DualPulse.App.ViewModels;
+using DualPulse.Core.Protocol;
 using DualPulse.Emulation;
 using Xunit;
 
@@ -58,5 +59,43 @@ public sealed class SticksViewModelTests
 		settings.Update(s => s with { Emulation = kind });
 
 		Assert.Equal(note, CreateViewModel().ShowNativeNote);
+	}
+
+	[Fact]
+	public async Task Measure_WithoutAController_SaysSo()
+	{
+		SticksViewModel viewModel = new(settings, controller, latest: () => null, delay: _ => Task.CompletedTask);
+
+		await viewModel.Left.MeasureCommand.ExecuteAsync(null);
+
+		Assert.Equal("Connect your controller first.", viewModel.Left.MeasureStatus);
+		Assert.Equal(0, viewModel.Left.Deadzone);
+	}
+
+	[Fact]
+	public async Task Measure_Linked_CoversTheDriftOfBothSticks()
+	{
+		// Left stick rests 2 steps off, right stick 3: linked, the deadzone covers the worse one.
+		InputSnapshot resting = new() { LeftX = 128, LeftY = 130, RightX = 128, RightY = 125 };
+		SticksViewModel viewModel = new(settings, controller, latest: () => resting, delay: _ => Task.CompletedTask);
+
+		await viewModel.Left.MeasureCommand.ExecuteAsync(null);
+
+		Assert.Equal(5, viewModel.Left.Deadzone);
+		Assert.Equal(0.05, settings.Current.EffectiveSticks.Left.Deadzone, 3);
+		Assert.Equal("Set to 5%.", viewModel.Left.MeasureStatus);
+	}
+
+	[Fact]
+	public async Task Measure_Unlinked_MeasuresOnlyThatStick()
+	{
+		InputSnapshot resting = new() { LeftX = 128, LeftY = 130, RightX = 128, RightY = 120 };
+		SticksViewModel viewModel = new(settings, controller, latest: () => resting, delay: _ => Task.CompletedTask);
+		viewModel.Linked = false;
+
+		await viewModel.Left.MeasureCommand.ExecuteAsync(null);
+
+		Assert.Equal(4, viewModel.Left.Deadzone);
+		Assert.Equal(0, viewModel.Right.Deadzone);
 	}
 }

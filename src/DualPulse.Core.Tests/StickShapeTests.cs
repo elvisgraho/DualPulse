@@ -48,4 +48,27 @@ public sealed class StickShapeTests
 	{
 		Assert.Equal((x, y), StickShape.Apply(x, y, deadzone: 0, fullTiltAt: 1));
 	}
+
+	[Fact]
+	public void SuggestedDeadzone_CoversTheFurthestRestingDrift_PlusAMargin()
+	{
+		// Resting 2 steps off centre (about 1.6%), wobbling to 3: the deadzone must cover 3 steps (2.4%) plus the margin.
+		(byte, byte)[] samples = [(128, 130), (128, 131), (129, 130), (128, 130)];
+
+		int percent = StickShape.SuggestDeadzone(samples);
+
+		Assert.Equal(5, percent);
+	}
+
+	[Fact]
+	public void SuggestedDeadzone_ForAPerfectStick_IsJustTheMargin()
+	{
+		Assert.Equal(2, StickShape.SuggestDeadzone([(128, 128), (128, 128)]));
+	}
+
+	[Fact]
+	public void SuggestedDeadzone_NeverExceedsTheSliderMaximum()
+	{
+		Assert.Equal(30, StickShape.SuggestDeadzone([(255, 128)]));
+	}
 }

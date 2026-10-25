@@ -16,12 +16,16 @@
                                    Deadzone="{Binding Deadzone}" FullTiltAt="{Binding FullTiltAt}" />
             <StackPanel Grid.Column="2" Spacing="12" VerticalAlignment="Center">
               <StackPanel Spacing="2">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="Deadzone" />
-                  <TextBlock Grid.Column="1" Classes="secondary" Text="{Binding Deadzone, StringFormat={}{0}%}" />
+                <Grid ColumnDefinitions="*,Auto,12,Auto">
+                  <TextBlock VerticalAlignment="Center" Text="Deadzone" />
+                  <TextBlock Grid.Column="1" VerticalAlignment="Center" Classes="secondary" Text="{Binding Deadzone, StringFormat={}{0}%}" />
+                  <Button Grid.Column="3" Content="Measure" Command="{Binding MeasureCommand}"
+                          ToolTip.Tip="Let go of the stick: sets the deadzone just above its drift" />
                 </Grid>
                 <Slider Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Deadzone}" />
                 <TextBlock Classes="caption" Text="Ignores small drift around the centre." />
+                <TextBlock Classes="caption" Text="{Binding MeasureStatus}"
+                           IsVisible="{Binding MeasureStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
               <StackPanel Spacing="2">
                 <Grid ColumnDefinitions="*,Auto">

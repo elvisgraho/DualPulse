@@ -26,5 +26,14 @@ public static class StickShape
 		return (ToByte(dx * factor), ToByte(dy * factor));
 	}
 
+	// The deadzone (percent, 2-30) that hides a resting stick's drift: the furthest any sample sits from centre, rounded
+	// up, plus a margin for the wobble right after the stick is let go.
+	public static int SuggestDeadzone(IEnumerable<(byte X, byte Y)> resting)
+	{
+		const int Margin = 2;
+		double furthest = resting.Select(p => Math.Sqrt(Math.Pow(p.X - 128, 2) + Math.Pow(p.Y - 128, 2))).DefaultIfEmpty(0).Max();
+		return Math.Clamp((int)Math.Ceiling(Math.Round(furthest * 100 / Centre, 6)) + Margin, Margin, 30);
+	}
+
 	private static byte ToByte(double value) => (byte)Math.Clamp(Math.Round(Centre + value * Centre), 0, 255);
 }

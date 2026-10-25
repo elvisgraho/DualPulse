@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using DualPulse.App.Services;
 using DualPulse.Core.Protocol;
 
@@ -16,11 +17,19 @@ public sealed partial class SticksViewModel : ObservableObject
 
 	private readonly UiContext ui = new();
 
-	public SticksViewModel(ISettingsService settings, IControllerService controller, ProfileSelection? selection = null)
+	private readonly Func<InputSnapshot?> latest;
+
+	private readonly Func<TimeSpan, Task> delay;
+
+	// latest and delay: where the stick positions come from and how measuring waits (tests replace both).
+	public SticksViewModel(ISettingsService settings, IControllerService controller, ProfileSelection? selection = null,
+		Func<InputSnapshot?>? latest = null, Func<TimeSpan, Task>? delay = null)
 	{
 		this.settings = settings;
 		this.controller = controller;
 		this.selection = selection;
+		this.latest = latest ?? (() => controller.Session?.Latest);
+		this.delay = delay ?? Task.Delay;
 		Left = new StickEditorViewModel(this, isLeft: true);
 		Right = new StickEditorViewModel(this, isLeft: false);
 		Strip = new ProfileStripViewModel(selection, ProfilePart.Sticks, "sticks");
@@ -58,9 +67,34 @@ public sealed partial class SticksViewModel : ObservableObject
 	// Samples the sticks for the previews.
 	public void RefreshPreview()
 	{
-		InputSnapshot? latest = controller.Session?.Latest;
-		Left.ShowPosition(latest?.LeftX ?? 128, latest?.LeftY ?? 128);
-		Right.ShowPosition(latest?.RightX ?? 128, latest?.RightY ?? 128);
+		InputSnapshot? now = latest();
+		Left.ShowPosition(now?.LeftX ?? 128, now?.LeftY ?? 128);
+		Right.ShowPosition(now?.RightX ?? 128, now?.RightY ?? 128);
+	}
+
+	// Watches the resting stick(s) for about two seconds; null when no controller is connected. While linked, the left
+	// card measures both sticks.
+	internal async Task<List<(byte X, byte Y)>?> SampleRestingAsync(bool isLeft)
+	{
+		const int Samples = 100;
+		List<(byte X, byte Y)> resting = [];
+		for (int i = 0; i < Samples; i++)
+		{
+			if (latest() is not { } now)
+			{
+				return null;
+			}
+			if (isLeft || Linked)
+			{
+				resting.Add((now.LeftX, now.LeftY));
+			}
+			if (!isLeft || Linked)
+			{
+				resting.Add((now.RightX, now.RightY));
+			}
+			await delay(TimeSpan.FromMilliseconds(20));
+		}
+		return resting;
 	}
 
 	internal void WriteRange(bool isLeft, StickRange range)
@@ -112,6 +146,10 @@ public sealed partial class StickEditorViewModel : ObservableObject
 
 	public string Title => isLeft ? (page.Linked ? "Left and right stick" : "Left stick") : "Right stick";
 
+	// What Measure found (or why it couldn't).
+	[ObservableProperty]
+	public partial string MeasureStatus { get; private set; } = "";
+
 	private StickRange Range => isLeft ? page.Sticks.Left : page.Sticks.Right;
 
 	public int Deadzone
@@ -132,6 +170,22 @@ public sealed partial class StickEditorViewModel : ObservableObject
 
 	[ObservableProperty]
 	public partial Avalonia.Point GamePosition { get; private set; }
+
+	// Sets the deadzone just above how far the resting stick drifts.
+	[RelayCommand]
+	private async Task Measure()
+	{
+		MeasureStatus = "Let go of the stick...";
+		List<(byte X, byte Y)>? resting = await page.SampleRestingAsync(isLeft);
+		if (resting == null)
+		{
+			MeasureStatus = "Connect your controller first.";
+			return;
+		}
+		int percent = StickShape.SuggestDeadzone(resting);
+		Deadzone = percent;
+		MeasureStatus = $"Set to {percent}%.";
+	}
 
 	internal void ShowPosition(byte x, byte y)
 	{
