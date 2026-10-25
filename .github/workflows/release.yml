@@ -1,0 +1,37 @@
+name: Release
+
+# Push a tag like v0.2.0: tests run, then the self-contained zip is attached to a new GitHub release.
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Test
+      run: |
+        dotnet test --project src/DualPulse.Core.Tests -c Release
+        dotnet test --project src/DualPulse.App.Tests -c Release
+
+    - name: Build the download
+      shell: pwsh
+      run: ./tools/publish.ps1 -Version "${{ github.ref_name }}".TrimStart('v')
+
+    - name: Create the release
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release create "${{ github.ref_name }}" (Get-Item artifacts/*.zip).FullName --title "DualPulse ${{ github.ref_name }}" --generate-notes

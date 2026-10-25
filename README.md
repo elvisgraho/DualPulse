@@ -24,6 +24,12 @@ every game works. Free and open source (MIT), a free alternative to DSX.
 - **DSX mods:** games with DSX v2 and v3.1 mods work.
 - **Daily use:** starts with Windows, lives in the tray, low-battery pop-ups, turns the controller off on request.
 
+## Download
+
+Get the latest `DualPulse-<version>-win-x64.zip` from
+[Releases](https://github.com/elvisgraho/DualPulse/releases/latest), unzip it anywhere and run `DualPulse.exe`.
+Nothing else to install; DualPulse tells you if a mode you pick needs a driver.
+
 ## Requirements
 
 - Windows 10 or 11, 64-bit

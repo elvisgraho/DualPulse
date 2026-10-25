@@ -17,3 +17,6 @@ Thumbs.db
 
 # Local plan, not published
 TODO.md
+
+# Release builds (tools/publish.ps1)
+artifacts/
