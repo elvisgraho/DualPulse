@@ -31,7 +31,7 @@
             </ComboBox>
           </Grid>
           <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowDualSenseHint}"
-                     Text="Games with DualSense support get adaptive triggers, lights and vibration, also over Bluetooth. Works best with Hide my DualSense on. Needs the free usbip-win2 driver." />
+                     Text="Games with DualSense support get adaptive triggers, lights and vibration, also over Bluetooth. Works best with Hide my DualSense on." />
           <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
             <StackPanel Spacing="2">
               <TextBlock Text="Game sound on the controller speaker" />
@@ -47,6 +47,10 @@
           <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowViGEmBus}">
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding DriverText}" />
             <Button Grid.Column="2" Content="Get ViGEmBus" Command="{Binding GetViGEmBusCommand}" IsVisible="{Binding DriverMissing}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowUsbIp}">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding UsbIpText}" />
+            <Button Grid.Column="2" Content="Get usbip-win2" Command="{Binding GetUsbIpCommand}" IsVisible="{Binding UsbIpMissing}" />
           </Grid>
         </StackPanel>
       </Border>

@@ -102,6 +102,36 @@ public sealed class EmulationViewModelTests
 	}
 
 	[Fact]
+	public void DualSense_WithoutUsbIpWin2_OffersItsReleasePage()
+	{
+		settings.Update(s => s with { Emulation = PadKind.DualSense });
+		backend.DualSenseAvailable = false;
+		EmulationViewModel viewModel = CreateViewModel();
+
+		viewModel.Refresh();
+		viewModel.GetUsbIpCommand.Execute(null);
+
+		Assert.True(viewModel.ShowUsbIp);
+		Assert.True(viewModel.UsbIpMissing);
+		Assert.Equal("usbip-win2 isn't installed", viewModel.UsbIpText);
+		Assert.Equal(["https://github.com/vadimgrn/usbip-win2/releases"], opened);
+	}
+
+	[Theory]
+	[InlineData(PadKind.Xbox360, false)]
+	[InlineData(PadKind.DualSense, true)]
+	[InlineData(null, false)]
+	public void UsbIpLine_ShowsOnlyForTheDualSense(PadKind? kind, bool shown)
+	{
+		settings.Update(s => s with { Emulation = kind });
+		EmulationViewModel viewModel = CreateViewModel();
+
+		Assert.Equal(shown, viewModel.ShowUsbIp);
+		Assert.Equal("usbip-win2 installed", viewModel.UsbIpText);
+		Assert.False(viewModel.UsbIpMissing);
+	}
+
+	[Fact]
 	public void DualSense_StartFailure_WithUsbIpWin2_SaysItCouldNotPlugIn()
 	{
 		settings.Update(s => s with { Emulation = PadKind.DualSense });

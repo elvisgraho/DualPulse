@@ -8,13 +8,16 @@ namespace DualPulse.App.ViewModels;
 
 public sealed record EmulationChoice(string Label, PadKind? Kind);
 
-// The Emulation page: which virtual controller games see, the ViGEmBus driver's state, and hiding the real DualSense
-// through HidHide. Missing drivers link to their official release pages; nothing is downloaded or installed here.
+// The Emulation page: which virtual controller games see, the driver it needs (ViGEmBus or usbip-win2), and hiding the
+// real DualSense through HidHide. Missing drivers link to their official release pages; nothing is downloaded or
+// installed here.
 public sealed partial class EmulationViewModel : ObservableObject
 {
 	private const string ViGEmBusReleases = "https://github.com/nefarius/ViGEmBus/releases";
 
 	private const string HidHideReleases = "https://github.com/nefarius/HidHide/releases";
+
+	private const string UsbIpReleases = "https://github.com/vadimgrn/usbip-win2/releases";
 
 	private readonly ISettingsService settings;
 
@@ -44,6 +47,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 			OnPropertyChanged(nameof(SelectedEmulation));
 			OnPropertyChanged(nameof(ShowDualSenseHint));
 			OnPropertyChanged(nameof(ShowViGEmBus));
+			OnPropertyChanged(nameof(ShowUsbIp));
 			OnPropertyChanged(nameof(HideController));
 			OnPropertyChanged(nameof(GameSoundOnController));
 		});
@@ -70,6 +74,12 @@ public sealed partial class EmulationViewModel : ObservableObject
 	public partial bool DriverMissing { get; private set; }
 
 	[ObservableProperty]
+	public partial string UsbIpText { get; private set; } = "";
+
+	[ObservableProperty]
+	public partial bool UsbIpMissing { get; private set; }
+
+	[ObservableProperty]
 	public partial string HideStatusText { get; private set; } = "";
 
 	// HidHide needs installing (or reinstalling): shows the button to its release page.
@@ -85,6 +95,9 @@ public sealed partial class EmulationViewModel : ObservableObject
 
 	// ViGEmBus only matters for the Xbox 360 and DualShock 4 choices.
 	public bool ShowViGEmBus => settings.Current.Emulation is PadKind.Xbox360 or PadKind.DualShock4;
+
+	// usbip-win2 only matters for the virtual DualSense.
+	public bool ShowUsbIp => settings.Current.Emulation == PadKind.DualSense;
 
 	public EmulationChoice SelectedEmulation
 	{
@@ -136,6 +149,8 @@ public sealed partial class EmulationViewModel : ObservableObject
 		DriverMissing = !backend.IsAvailable;
 		string? version = driverVersion();
 		DriverText = DriverMissing ? "ViGEmBus isn't installed" : version == null ? "ViGEmBus installed" : $"ViGEmBus {version} installed";
+		UsbIpMissing = !backend.IsAvailableFor(PadKind.DualSense);
+		UsbIpText = UsbIpMissing ? "usbip-win2 isn't installed" : "usbip-win2 installed";
 		HidHideMissing = hidHide.Status is HidHideStatus.NotInstalled or HidHideStatus.NotAttached;
 		CanToggleHide = hidHide.Status != HidHideStatus.NotInstalled;
 		HideStatusText = hidHide.Status switch
@@ -153,6 +168,9 @@ public sealed partial class EmulationViewModel : ObservableObject
 
 	[RelayCommand]
 	private void GetHidHide() => Open(HidHideReleases);
+
+	[RelayCommand]
+	private void GetUsbIp() => Open(UsbIpReleases);
 
 	private void Open(string target)
 	{
