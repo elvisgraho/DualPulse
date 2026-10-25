@@ -68,7 +68,7 @@
           <Grid ColumnDefinitions="*,16,Auto">
             <StackPanel Spacing="2">
               <TextBlock Text="Feel PC sound in the grips" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Games, music and video become vibration you feel in your hands. Bluetooth only." />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Games, music and video become vibration you feel in your hands, over Bluetooth or the cable." />
             </StackPanel>
             <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding AudioHaptics}" />
           </Grid>

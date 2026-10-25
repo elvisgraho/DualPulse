@@ -509,3 +509,29 @@ internal sealed class FakeDualSensePad : IDualSensePad
 	public void Dispose() => Disposed = true;
 }
 
+internal sealed class FakeControllerUsbAudio : DualPulse.Core.Audio.IControllerUsbAudio
+{
+	public List<FakeControllerAudioStream> Opened { get; } = [];
+
+	public DualPulse.Core.Audio.IControllerAudioStream? Open()
+	{
+		FakeControllerAudioStream stream = new();
+		Opened.Add(stream);
+		return stream;
+	}
+}
+
+internal sealed class FakeControllerAudioStream : DualPulse.Core.Audio.IControllerAudioStream
+{
+	public List<short> Written { get; } = [];
+
+	public bool Disposed { get; private set; }
+
+	public void Write(ReadOnlySpan<short> samples, int channels)
+	{
+		Xunit.Assert.Equal(4, channels);
+		Written.AddRange(samples);
+	}
+
+	public void Dispose() => Disposed = true;
+}

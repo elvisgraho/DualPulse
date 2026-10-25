@@ -19,6 +19,8 @@ public sealed class AudioHapticsServiceTests : IDisposable
 
 	private readonly FakeEmulationService emulation = new() { Status = EmulationStatus.Active };
 
+	private readonly FakeControllerUsbAudio usbAudio = new();
+
 	private readonly ControllerService controller;
 
 	private readonly AudioHapticsService audio;
@@ -26,7 +28,7 @@ public sealed class AudioHapticsServiceTests : IDisposable
 	public AudioHapticsServiceTests()
 	{
 		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
-		audio = new AudioHapticsService(controller, settings, source, emulation);
+		audio = new AudioHapticsService(controller, settings, source, emulation, usbAudio);
 	}
 
 	public void Dispose()
@@ -70,13 +72,24 @@ public sealed class AudioHapticsServiceTests : IDisposable
 	}
 
 	[Fact]
-	public async Task OverUsb_NoCapture()
+	public async Task OverUsb_PlaysThroughTheControllersSoundDevice()
 	{
 		Enable();
 		transport.Add(FakeHidTransport.UsbPath);
 		await controller.StartAsync(TestContext.Current.CancellationToken);
+		Assert.True(source.Running);
 
+		source.Play(Bass());
+
+		FakeControllerAudioStream stream = Assert.Single(usbAudio.Opened);
+		Assert.NotEmpty(stream.Written);
+		// Speaker channels silent, haptics on channels 3-4.
+		Assert.All(Enumerable.Range(0, stream.Written.Count / 4), frame => Assert.Equal(0, stream.Written[frame * 4]));
+		Assert.Contains(Enumerable.Range(0, stream.Written.Count / 4), frame => stream.Written[frame * 4 + 2] != 0);
+
+		Enable(false);
 		Assert.False(source.Running);
+		Assert.True(stream.Disposed);
 	}
 
 	[Fact]

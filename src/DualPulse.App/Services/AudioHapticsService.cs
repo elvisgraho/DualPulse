@@ -5,9 +5,11 @@ using DualPulse.Core.Protocol;
 
 namespace DualPulse.App.Services;
 
-// System audio felt through the grips: while the setting is on and the controller is on Bluetooth with haptics
-// allowed, captures what the computer plays and feeds it into the session's haptics mixer (mixed with game rumble).
-// Capture runs only while needed, and not while a virtual DualSense is active (a game's own haptics play then).
+// System audio felt through the grips: while the setting is on, captures what the computer plays and turns it into
+// haptics. Over Bluetooth (with haptics allowed) it goes into the session's haptics mixer, mixed with game rumble; on a
+// cable into channels 3-4 of the controller's own sound device, as games play haptics natively (never the rumble
+// motors, which would switch the haptics off until the controller is power-cycled). Capture runs only while needed,
+// and not while a virtual DualSense is active (a game's own haptics play then).
 public sealed class AudioHapticsService : IHostedService, IDisposable
 {
 	private readonly IControllerService controller;
@@ -24,8 +26,21 @@ public sealed class AudioHapticsService : IHostedService, IDisposable
 
 	private readonly IEmulationService? emulation;
 
-	public AudioHapticsService(IControllerService controller, ISettingsService settings, ISystemAudioSource source, IEmulationService? emulation = null)
+	private readonly IControllerUsbAudio? usbAudio;
+
+	// On a cable: the controller's sound device (opened on the first block; tried again at most once a second).
+	private IControllerAudioStream? usbStream;
+
+	private const long NeverTried = -10_000;
+
+	private long usbOpenTried = NeverTried;
+
+	private readonly UsbHapticsStream usbFrames = new();
+
+	public AudioHapticsService(IControllerService controller, ISettingsService settings, ISystemAudioSource source, IEmulationService? emulation = null,
+		IControllerUsbAudio? usbAudio = null)
 	{
+		this.usbAudio = usbAudio;
 		this.controller = controller;
 		this.settings = settings;
 		this.source = source;
@@ -72,8 +87,9 @@ public sealed class AudioHapticsService : IHostedService, IDisposable
 	{
 		RumbleSettings rumble = settings.Current.EffectiveRumble;
 		ControllerSession? session = controller.Session;
-		bool wanted = rumble.AudioHaptics && rumble.BluetoothHaptics && session?.Transport == Transport.Bluetooth
-			&& !VirtualDualSenseActive.In(settings, emulation);
+		bool overBluetooth = session?.Transport == Transport.Bluetooth && rumble.BluetoothHaptics;
+		bool overCable = session?.Transport == Transport.Usb && usbAudio != null;
+		bool wanted = rumble.AudioHaptics && (overBluetooth || overCable) && !VirtualDualSenseActive.In(settings, emulation);
 		lock (gate)
 		{
 			if (!wanted)
@@ -105,6 +121,9 @@ public sealed class AudioHapticsService : IHostedService, IDisposable
 		}
 		feeding = null;
 		converter = null;
+		usbStream?.Dispose();
+		usbStream = null;
+		usbOpenTried = NeverTried;
 	}
 
 	// Capture thread.
@@ -121,8 +140,38 @@ public sealed class AudioHapticsService : IHostedService, IDisposable
 		{
 			return;
 		}
+		if (session.Transport == Transport.Usb)
+		{
+			PlayOnCable(interleaved, current);
+			return;
+		}
 		current.Process(interleaved, session.HapticMixer);
 		session.WakeHaptics();
+	}
+
+	// Capture thread.
+	private void PlayOnCable(ReadOnlySpan<float> interleaved, HapticsAudioConverter current)
+	{
+		IControllerAudioStream? stream;
+		lock (gate)
+		{
+			if (usbStream == null && usbAudio != null && Environment.TickCount64 - usbOpenTried >= 1000)
+			{
+				usbOpenTried = Environment.TickCount64;
+				usbStream = usbAudio.Open();
+			}
+			stream = usbStream;
+		}
+		if (stream == null)
+		{
+			return;
+		}
+		current.Process(interleaved, usbFrames.Push);
+		short[] samples = usbFrames.Drain();
+		if (samples.Length > 0)
+		{
+			stream.Write(samples, UsbHapticsStream.ChannelCount);
+		}
 	}
 }
 

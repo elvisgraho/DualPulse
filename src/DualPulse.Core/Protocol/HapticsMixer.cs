@@ -139,7 +139,10 @@ public sealed class HapticsAudioConverter
 
 	public HapticsAudioStyle Style { get; set; } = HapticsAudioStyle.Natural;
 
-	public void Process(ReadOnlySpan<float> interleaved, HapticsMixer mixer)
+	public void Process(ReadOnlySpan<float> interleaved, HapticsMixer mixer) => Process(interleaved, mixer.Push);
+
+	// The same frames to any sink (the cable's sound device takes them through UsbHapticsStream).
+	public void Process(ReadOnlySpan<float> interleaved, Action<sbyte, sbyte> push)
 	{
 		double gain = Math.Clamp(Intensity, 0, SoftLimit ? 6 : 2);
 		for (int i = 0; i + channels <= interleaved.Length; i += channels)
@@ -157,7 +160,7 @@ public sealed class HapticsAudioConverter
 				{
 					(left, right) = punchy.Next(left, right);
 				}
-				mixer.Push(ToSample(Shape(left, gain)), ToSample(Shape(right, gain)));
+				push(ToSample(Shape(left, gain)), ToSample(Shape(right, gain)));
 				sumLeft = 0;
 				sumRight = 0;
 				summed = 0;
