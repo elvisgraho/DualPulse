@@ -80,7 +80,8 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 
 	private sealed class Stream : IControllerAudioStream
 	{
-		private static readonly TimeSpan MaxBuffered = TimeSpan.FromMilliseconds(60);
+		// Queued audio beyond this is dropped, so a capture clock running ahead never builds up delay.
+		private static readonly TimeSpan MaxBuffered = TimeSpan.FromMilliseconds(40);
 
 		private readonly MMDevice device;
 

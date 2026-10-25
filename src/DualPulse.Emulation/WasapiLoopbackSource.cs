@@ -8,7 +8,8 @@ namespace DualPulse.Emulation;
 
 // Windows implementation of ISystemAudioSource: WASAPI loopback of an output device (the default one unless an id is
 // given) through NAudio. The shared-mode mix format is normally 32-bit float; 16-bit PCM is converted. Failures (no
-// output device) make Start return false.
+// output device) make Start return false. A 20 ms buffer keeps the blocks short (NAudio's default of 100 ms delivers
+// ~60 ms blocks, which made haptics trail the sound).
 [SupportedOSPlatform("windows")]
 public sealed class WasapiLoopbackSource : ISystemAudioSource
 {
@@ -16,7 +17,7 @@ public sealed class WasapiLoopbackSource : ISystemAudioSource
 
 	private readonly string? deviceId;
 
-	private WasapiLoopbackCapture? capture;
+	private ShortBufferLoopbackCapture? capture;
 
 	private float[] converted = [];
 
@@ -41,7 +42,8 @@ public sealed class WasapiLoopbackSource : ISystemAudioSource
 			}
 			try
 			{
-				WasapiLoopbackCapture started = deviceId == null ? new() : new(new MMDeviceEnumerator().GetDevice(deviceId));
+				using MMDeviceEnumerator enumerator = new();
+				ShortBufferLoopbackCapture started = new(deviceId == null ? enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) : enumerator.GetDevice(deviceId));
 				SampleRate = started.WaveFormat.SampleRate;
 				Channels = started.WaveFormat.Channels;
 				started.DataAvailable += OnData;
@@ -82,7 +84,7 @@ public sealed class WasapiLoopbackSource : ISystemAudioSource
 
 	private void OnData(object? sender, WaveInEventArgs e)
 	{
-		if (sender is not WasapiLoopbackCapture source || e.BytesRecorded == 0)
+		if (sender is not WasapiCapture source || e.BytesRecorded == 0)
 		{
 			return;
 		}
@@ -106,6 +108,13 @@ public sealed class WasapiLoopbackSource : ISystemAudioSource
 			Blocks?.Invoke(converted.AsSpan(0, samples.Length));
 		}
 	}
+}
+
+// Loopback capture (as NAudio's WasapiLoopbackCapture) with a 20 ms buffer instead of 100 ms.
+[SupportedOSPlatform("windows")]
+internal sealed class ShortBufferLoopbackCapture(MMDevice device) : WasapiCapture(device, false, 20)
+{
+	protected override AudioClientStreamFlags GetAudioClientStreamFlags() => AudioClientStreamFlags.Loopback | base.GetAudioClientStreamFlags();
 }
 
 // Active Windows output devices (id and friendly name) and loopback sources for them.

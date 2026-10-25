@@ -485,8 +485,12 @@ if (args.Length >= 1 && args[0] == "audio-level")
 	// Prints the loopback level (peak per half second) of what Windows is playing, for 5 s.
 	using DualPulse.Emulation.WasapiLoopbackSource source = new();
 	float peak = 0;
+	int blocks = 0;
+	long blockSamples = 0;
 	source.Blocks += samples =>
 	{
+		blocks++;
+		blockSamples += samples.Length;
 		foreach (float sample in samples)
 		{
 			peak = Math.Max(peak, Math.Abs(sample));
@@ -501,8 +505,10 @@ if (args.Length >= 1 && args[0] == "audio-level")
 	for (int i = 0; i < 10; i++)
 	{
 		Thread.Sleep(500);
-		Console.WriteLine($"peak {peak:0.000}");
+		Console.WriteLine($"peak {peak:0.000}, blocks {blocks}, ms per block {(blocks == 0 ? 0 : blockSamples / (double)blocks / source.Channels * 1000 / source.SampleRate):0.0}");
 		peak = 0;
+		blocks = 0;
+		blockSamples = 0;
 	}
 	return 0;
 }
