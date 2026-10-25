@@ -5,7 +5,7 @@
     <RootNamespace>DualPulse.App</RootNamespace>
     <AssemblyName>DualPulse</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <!-- The exe's own icon (Explorer, taskbar, shortcuts); windows set theirs in XAML. -->
     <ApplicationIcon>Assets\dualpulse.ico</ApplicationIcon>
   </PropertyGroup>
