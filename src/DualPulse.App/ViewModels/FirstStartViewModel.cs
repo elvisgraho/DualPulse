@@ -18,8 +18,8 @@ public static class DriverPages
 
 public sealed record SetupChoice(string Label, string Detail, PadKind? Kind);
 
-// The first-start window: how games should see the controller, and whether that mode's driver is there. It opens on
-// the first start until it is closed, with Done or the window's close button (SetupDone).
+// The first-start window: how games should see the controller. Picking a mode whose driver is there finishes it; with
+// the driver missing it stays open with a link to it, and closing the window finishes it (SetupDone).
 public sealed partial class FirstStartViewModel : ObservableObject
 {
 	private readonly ISettingsService settings;
@@ -44,8 +44,20 @@ public sealed partial class FirstStartViewModel : ObservableObject
 
 	public bool IsVisible => !settings.Current.SetupDone;
 
-	// Done was clicked: the window closes.
+	// A ready mode was picked: the window closes.
 	public event Action? Finished;
+
+	public SetupChoice? SelectedChoice
+	{
+		get;
+		set
+		{
+			if (value != null && SetProperty(ref field, value))
+			{
+				Choose(value);
+			}
+		}
+	}
 
 	[ObservableProperty]
 	public partial bool HasChosen { get; private set; }
@@ -58,7 +70,6 @@ public sealed partial class FirstStartViewModel : ObservableObject
 
 	private string? driverPage;
 
-	[RelayCommand]
 	private void Choose(SetupChoice choice)
 	{
 		settings.Update(s => s with { Emulation = choice.Kind });
@@ -70,8 +81,13 @@ public sealed partial class FirstStartViewModel : ObservableObject
 		};
 		driverPage = page;
 		DriverMissing = page != null;
-		DriverText = name == null ? "Ready." : $"Needs the free {name} driver.";
+		DriverText = name == null ? "" : $"Needs the free {name} driver.";
 		HasChosen = true;
+		if (page == null)
+		{
+			Dismiss();
+			Finished?.Invoke();
+		}
 	}
 
 	[RelayCommand]
@@ -88,13 +104,6 @@ public sealed partial class FirstStartViewModel : ObservableObject
 		catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
 		{
 		}
-	}
-
-	[RelayCommand]
-	private void Done()
-	{
-		Dismiss();
-		Finished?.Invoke();
 	}
 
 	// Closed either way: it doesn't open again.

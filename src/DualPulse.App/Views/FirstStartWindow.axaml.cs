@@ -1,9 +1,11 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
 using DualPulse.App.ViewModels;
 
 namespace DualPulse.App.Views;
 
-// Closes on Done; closing it any other way also counts as done (FirstStartViewModel.Dismiss).
+// Closes shortly after a ready mode is picked (so the selection shows); closing it any other way also counts as done
+// (FirstStartViewModel.Dismiss).
 public partial class FirstStartWindow : Window
 {
 	public FirstStartWindow()
@@ -14,11 +16,13 @@ public partial class FirstStartWindow : Window
 	public FirstStartWindow(FirstStartViewModel guide) : this()
 	{
 		DataContext = guide;
-		guide.Finished += Close;
+		guide.Finished += CloseSoon;
 		Closed += (_, _) =>
 		{
-			guide.Finished -= Close;
+			guide.Finished -= CloseSoon;
 			guide.Dismiss();
 		};
 	}
+
+	private void CloseSoon() => DispatcherTimer.RunOnce(Close, TimeSpan.FromMilliseconds(350));
 }

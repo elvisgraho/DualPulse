@@ -12,23 +12,63 @@ public sealed class FirstStartViewModelTests
 
 	private readonly List<string> opened = [];
 
-	private FirstStartViewModel CreateViewModel() => new(settings, backend, opened.Add);
+	private int finished;
 
-	[Fact]
-	public void Shows_UntilDone()
+	private FirstStartViewModel CreateViewModel()
+	{
+		FirstStartViewModel guide = new(settings, backend, opened.Add);
+		guide.Finished += () => finished++;
+		return guide;
+	}
+
+	[Theory]
+	[InlineData(0)]
+	[InlineData(1)]
+	[InlineData(2)]
+	public void Picking_WithTheDriverThere_FinishesIt(int choice)
 	{
 		FirstStartViewModel guide = CreateViewModel();
 		Assert.True(guide.IsVisible);
 		Assert.Equal(["Xbox controller", "DualSense", "No virtual controller"], guide.Choices.Select(c => c.Label));
 
-		int finished = 0;
-		guide.Finished += () => finished++;
+		guide.SelectedChoice = guide.Choices[choice];
 
-		guide.DoneCommand.Execute(null);
-
-		Assert.False(guide.IsVisible);
+		Assert.Equal(guide.Choices[choice].Kind, settings.Current.Emulation);
+		Assert.False(guide.DriverMissing);
 		Assert.True(settings.Current.SetupDone);
+		Assert.False(guide.IsVisible);
 		Assert.Equal(1, finished);
+	}
+
+	[Fact]
+	public void PickingDualSense_WithoutUsbIpWin2_StaysOpenAndOffersIt()
+	{
+		backend.DualSenseAvailable = false;
+		FirstStartViewModel guide = CreateViewModel();
+
+		guide.SelectedChoice = guide.Choices[1];
+		guide.GetDriverCommand.Execute(null);
+
+		Assert.Equal(PadKind.DualSense, settings.Current.Emulation);
+		Assert.True(guide.DriverMissing);
+		Assert.Equal("Needs the free usbip-win2 driver.", guide.DriverText);
+		Assert.Equal(["https://github.com/vadimgrn/usbip-win2/releases"], opened);
+		Assert.Equal(0, finished);
+	}
+
+	[Fact]
+	public void PickingXbox_WithViGEmBusMissing_StaysOpenAndOffersIt()
+	{
+		backend.IsAvailable = false;
+		FirstStartViewModel guide = CreateViewModel();
+
+		guide.SelectedChoice = guide.Choices[0];
+		guide.GetDriverCommand.Execute(null);
+
+		Assert.Equal(PadKind.Xbox360, settings.Current.Emulation);
+		Assert.Equal("Needs the free ViGEmBus driver.", guide.DriverText);
+		Assert.Equal(["https://github.com/nefarius/ViGEmBus/releases"], opened);
+		Assert.Equal(0, finished);
 	}
 
 	[Fact]
@@ -39,48 +79,5 @@ public sealed class FirstStartViewModelTests
 		guide.Dismiss();
 
 		Assert.True(settings.Current.SetupDone);
-	}
-
-	[Fact]
-	public void ChoosingDualSense_WithoutUsbIpWin2_OffersIt()
-	{
-		backend.DualSenseAvailable = false;
-		FirstStartViewModel guide = CreateViewModel();
-
-		guide.ChooseCommand.Execute(guide.Choices[1]);
-		guide.GetDriverCommand.Execute(null);
-
-		Assert.Equal(PadKind.DualSense, settings.Current.Emulation);
-		Assert.True(guide.DriverMissing);
-		Assert.Equal("Needs the free usbip-win2 driver.", guide.DriverText);
-		Assert.Equal(["https://github.com/vadimgrn/usbip-win2/releases"], opened);
-	}
-
-	[Fact]
-	public void ChoosingXbox_WithViGEmBusMissing_OffersIt()
-	{
-		backend.IsAvailable = false;
-		FirstStartViewModel guide = CreateViewModel();
-
-		guide.ChooseCommand.Execute(guide.Choices[0]);
-		guide.GetDriverCommand.Execute(null);
-
-		Assert.Equal(PadKind.Xbox360, settings.Current.Emulation);
-		Assert.Equal("Needs the free ViGEmBus driver.", guide.DriverText);
-		Assert.Equal(["https://github.com/nefarius/ViGEmBus/releases"], opened);
-	}
-
-	[Theory]
-	[InlineData(0)]
-	[InlineData(2)]
-	public void Choosing_WithTheDriverThere_IsReady(int choice)
-	{
-		FirstStartViewModel guide = CreateViewModel();
-
-		guide.ChooseCommand.Execute(guide.Choices[choice]);
-
-		Assert.False(guide.DriverMissing);
-		Assert.Equal("Ready.", guide.DriverText);
-		Assert.Equal(guide.Choices[choice].Kind, settings.Current.Emulation);
 	}
 }

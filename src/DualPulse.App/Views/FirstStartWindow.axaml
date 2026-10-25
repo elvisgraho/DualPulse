@@ -11,30 +11,51 @@
   <StackPanel Spacing="12" Margin="24">
     <TextBlock Classes="caption" Text="GET STARTED" />
     <TextBlock Classes="subtitle" TextWrapping="Wrap" Text="How should games see your controller?" />
-    <ItemsControl ItemsSource="{Binding Choices}">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <StackPanel Spacing="8" />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
+    <ListBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedChoice}" Background="Transparent">
+      <ListBox.Styles>
+        <Style Selector="ListBoxItem">
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <!-- No hover or press effects; the picked option is shown by its border. -->
+        <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem Border.choice">
+          <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected Border.choice">
+          <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+        </Style>
+      </ListBox.Styles>
+      <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vm:SetupChoice">
-          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8"
-                  Command="{Binding $parent[ItemsControl].((vm:FirstStartViewModel)DataContext).ChooseCommand}"
-                  CommandParameter="{Binding}">
+          <Border Classes="choice" Background="{StaticResource Surface}" BorderThickness="2"
+                  CornerRadius="{StaticResource ControlRadius}" Padding="12,8">
             <StackPanel Spacing="2">
               <TextBlock Text="{Binding Label}" />
               <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Detail}" />
             </StackPanel>
-          </Button>
+          </Border>
         </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-    <Grid ColumnDefinitions="*,8,Auto" IsVisible="{Binding HasChosen}">
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <Grid ColumnDefinitions="*,8,Auto" IsVisible="{Binding DriverMissing}">
       <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding DriverText}" />
       <Button Grid.Column="2" Content="Get driver" Command="{Binding GetDriverCommand}" IsVisible="{Binding DriverMissing}" />
     </Grid>
     <TextBlock Classes="caption" TextWrapping="Wrap" Text="You can change this any time on the Emulation page." />
-    <Button HorizontalAlignment="Right" Content="Done" Command="{Binding DoneCommand}" />
   </StackPanel>
 </Window>
