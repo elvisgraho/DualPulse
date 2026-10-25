@@ -6,7 +6,7 @@
         x:DataType="vm:ShellViewModel"
         Title="DualPulse"
         Icon="/Assets/dualpulse.ico"
-        Width="1040" Height="680" MinWidth="760" MinHeight="520"
+        Width="1040" Height="760" MinWidth="760" MinHeight="520"
         Background="{StaticResource Bg}">
   <Grid RowDefinitions="*,28" ColumnDefinitions="64,*">
     <!-- Navigation rail -->
