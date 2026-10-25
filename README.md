@@ -38,4 +38,5 @@ Originally based on DualSenseX by Paliverse; rewritten from scratch. [Third-part
 Paliverse. [MIT license](LICENSE) · [Privacy policy](PRIVACY.md).
 
 Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
-[Code signing policy](https://elvisgraho.github.io/DualPulse/#code-signing-policy).
+[Code signing policy](https://elvisgraho.github.io/DualPulse/#code-signing-policy). Applied, pending approval: releases
+are not signed yet.

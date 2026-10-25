@@ -105,6 +105,9 @@ const jsonLd = {
 
       <section class="wrap" id="code-signing-policy">
         <h2>Code signing policy</h2>
+        <p class="note">
+          DualPulse has applied to the SignPath Foundation. Until the application is approved, releases are not signed.
+        </p>
         <p>
           Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.
         </p>
@@ -252,6 +255,11 @@ const jsonLd = {
   }
   .steps {
     padding-left: 20px;
+    color: var(--muted);
+  }
+  .note {
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
     color: var(--muted);
   }
   .plain {
