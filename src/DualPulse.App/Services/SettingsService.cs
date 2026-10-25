@@ -81,7 +81,12 @@ public sealed class SettingsService : ISettingsService
 		}
 		try
 		{
-			return JsonSerializer.Deserialize(json, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+			AppSettings loaded = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+			// Settings from before the first-start guide existed: that user has set DualPulse up already.
+			using JsonDocument document = JsonDocument.Parse(json);
+			return document.RootElement.ValueKind == JsonValueKind.Object && !document.RootElement.TryGetProperty(nameof(AppSettings.SetupDone), out _)
+				? loaded with { SetupDone = true }
+				: loaded;
 		}
 		catch (Exception exception) when (exception is JsonException or NotSupportedException)
 		{

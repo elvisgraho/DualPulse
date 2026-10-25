@@ -15,6 +15,11 @@ public sealed class ViGEmBackend : IVirtualPadBackend, IDisposable
 
 	private bool probed;
 
+	// While ViGEmBus is missing it is looked for again at most this often, so installing it needs no restart.
+	private static readonly long RetryMilliseconds = 5000;
+
+	private long probedAt;
+
 	private string? unavailableReason;
 
 	public bool IsAvailable
@@ -60,14 +65,16 @@ public sealed class ViGEmBackend : IVirtualPadBackend, IDisposable
 	{
 		lock (gate)
 		{
-			if (probed)
+			if (probed && (client != null || Environment.TickCount64 - probedAt < RetryMilliseconds))
 			{
 				return;
 			}
 			probed = true;
+			probedAt = Environment.TickCount64;
 			try
 			{
 				client = new ViGEmClient();
+				unavailableReason = null;
 			}
 			catch (VigemBusNotFoundException)
 			{

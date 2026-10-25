@@ -5,17 +5,26 @@ namespace DualPulse.Emulation;
 // Plugs USB/IP devices in through usbip-win2's command-line tool (usbip.exe, installed with its driver):
 // "usbip -t PORT attach -r 127.0.0.1 -b BUS --once --terse" prints the virtual hub port, "usbip detach -p PORT" unplugs.
 // --once: if DualPulse stops serving, Windows lets the device go instead of reconnecting to it.
-public sealed class UsbIpWinAttacher(string? tool) : IUsbIpAttacher
+// While usbip.exe isn't found, every availability check looks again, so installing usbip-win2 needs no restart.
+public sealed class UsbIpWinAttacher(Func<string?> locate) : IUsbIpAttacher
 {
 	private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(30);
 
-	public UsbIpWinAttacher() : this(Find(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), Environment.GetEnvironmentVariable("PATH")))
+	private string? tool;
+
+	public UsbIpWinAttacher() : this(() => Find(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), Environment.GetEnvironmentVariable("PATH")))
 	{
 	}
 
-	public bool IsAvailable => tool != null;
+	public UsbIpWinAttacher(string? tool) : this(() => tool)
+	{
+	}
 
-	public string? UnavailableReason => tool == null ? "usbip-win2 isn't installed (github.com/vadimgrn/usbip-win2)." : null;
+	public bool IsAvailable => Tool != null;
+
+	public string? UnavailableReason => Tool == null ? "usbip-win2 isn't installed (github.com/vadimgrn/usbip-win2)." : null;
+
+	private string? Tool => tool ??= locate();
 
 	public int Attach(int port, string busId)
 	{
@@ -56,14 +65,14 @@ public sealed class UsbIpWinAttacher(string? tool) : IUsbIpAttacher
 	// Every failure (the tool missing or refusing to start, a hang) is a UsbIpException.
 	private (string Output, string Errors, int ExitCode) Run(string arguments)
 	{
-		if (tool == null)
+		if (Tool is not { } path)
 		{
 			throw new UsbIpException(UnavailableReason!);
 		}
 		Process process;
 		try
 		{
-			process = Process.Start(new ProcessStartInfo(tool, arguments)
+			process = Process.Start(new ProcessStartInfo(path, arguments)
 			{
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,

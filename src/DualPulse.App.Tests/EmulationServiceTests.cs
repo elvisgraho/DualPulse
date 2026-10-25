@@ -146,6 +146,20 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
+	public void Emulation_DriverInstalledLater_StartsWithoutRestart()
+	{
+		backend.IsAvailable = false;
+		Connect();
+		Assert.Equal(EmulationStatus.DriverMissing, emulation.Status);
+
+		backend.IsAvailable = true;
+		time.Advance(EmulationService.DriverRecheck);
+
+		TestReports.WaitUntil(() => emulation.Status == EmulationStatus.Active);
+		Assert.Single(backend.Created);
+	}
+
+	[Fact]
 	public void Emulation_ModeNull_NoPad_StatusOff()
 	{
 		settings.Update(s => s with { Emulation = null });

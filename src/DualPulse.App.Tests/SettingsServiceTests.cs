@@ -72,6 +72,23 @@ public sealed class SettingsServiceTests : IDisposable
 		}
 	}
 
+	[Theory]
+	[InlineData("""{ "Version": 1 }""", true)]
+	[InlineData("""{ "Version": 1, "SetupDone": false }""", false)]
+	public void Settings_FromBeforeTheFirstStartGuide_CountAsSetUp(string json, bool done)
+	{
+		Directory.CreateDirectory(folder);
+		File.WriteAllText(SettingsPath, json);
+
+		Assert.Equal(done, new SettingsService(folder).Current.SetupDone);
+	}
+
+	[Fact]
+	public void Settings_NewInstall_ShowsTheFirstStartGuide()
+	{
+		Assert.False(new SettingsService(folder).Current.SetupDone);
+	}
+
 	[Fact]
 	public void Settings_TriggersWithoutRange_LoadWithNoRange()
 	{

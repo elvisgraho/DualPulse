@@ -72,6 +72,23 @@ public sealed class FirstStartViewModelTests
 	}
 
 	[Fact]
+	public void DriverInstalledWhileOpen_FinishesIt()
+	{
+		backend.DualSenseAvailable = false;
+		FirstStartViewModel guide = CreateViewModel();
+		guide.SelectedChoice = guide.Choices[1];
+
+		guide.Recheck();
+		Assert.Equal(0, finished);
+		backend.DualSenseAvailable = true;
+		guide.Recheck();
+
+		Assert.False(guide.DriverMissing);
+		Assert.Equal(1, finished);
+		Assert.True(settings.Current.SetupDone);
+	}
+
+	[Fact]
 	public void ClosingTheWindow_CountsAsDone()
 	{
 		FirstStartViewModel guide = CreateViewModel();

@@ -29,6 +29,19 @@ public sealed class UsbIpWinAttacherTests : IDisposable
 	}
 
 	[Fact]
+	public void ToolInstalledLater_IsFound()
+	{
+		string? tool = null;
+		UsbIpWinAttacher attacher = new(() => tool);
+		Assert.False(attacher.IsAvailable);
+
+		tool = @"C:\Program Files\USBip\usbip.exe";
+
+		Assert.True(attacher.IsAvailable);
+		Assert.Null(attacher.UnavailableReason);
+	}
+
+	[Fact]
 	public void NoTool_IsUnavailable_WithAReason()
 	{
 		UsbIpWinAttacher attacher = new(tool: null);

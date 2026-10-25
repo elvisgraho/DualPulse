@@ -48,7 +48,9 @@ public sealed partial class Diagnostics(ISettingsService settings, IControllerSe
 	public static string Redact(string text)
 	{
 		text = MacAddress().Replace(text, "<address>");
-		return UserFolder().Replace(text, m => $"{m.Groups[1].Value}Users{m.Groups[1].Value}<user>{m.Groups[1].Value}");
+		// A user folder inside a path (the name may contain spaces), then one at the end of a path.
+		text = UserFolder().Replace(text, m => $"{m.Groups[1].Value}Users{m.Groups[1].Value}<user>{m.Groups[1].Value}");
+		return UserFolderAtEnd().Replace(text, m => $"{m.Groups[1].Value}Users{m.Groups[1].Value}<user>");
 	}
 
 	private IEnumerable<string> LastLogLines()
@@ -89,4 +91,7 @@ public sealed partial class Diagnostics(ISettingsService settings, IControllerSe
 
 	[GeneratedRegex(@"([\\/])Users[\\/][^\\/\r\n]+[\\/]", RegexOptions.IgnoreCase)]
 	private static partial Regex UserFolder();
+
+	[GeneratedRegex(@"([\\/])Users[\\/](?!<user>)[^\\/\s""']+", RegexOptions.IgnoreCase)]
+	private static partial Regex UserFolderAtEnd();
 }

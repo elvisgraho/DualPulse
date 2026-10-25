@@ -69,4 +69,13 @@ public sealed class DiagnosticsTests : IDisposable
 		Assert.DoesNotContain("jane.doe", report);
 		Assert.Contains(@"\Users\<user>\Apps", report);
 	}
+
+	[Theory]
+	[InlineData(@"Data folder C:\Users\jane.doe", @"Data folder C:\Users\<user>")]
+	[InlineData(@"Saved to C:\Users\Jane Doe\AppData\x.json", @"Saved to C:\Users\<user>\AppData\x.json")]
+	[InlineData(@"Home is /Users/jane and more", @"Home is /Users/<user> and more")]
+	public void Redact_UserFoldersAnywhereInALine(string line, string redacted)
+	{
+		Assert.Equal(redacted, Diagnostics.Redact(line));
+	}
 }

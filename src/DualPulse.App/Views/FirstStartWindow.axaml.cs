@@ -17,8 +17,13 @@ public partial class FirstStartWindow : Window
 	{
 		DataContext = guide;
 		guide.Finished += CloseSoon;
+		// Notices a driver installed while the window waits for it.
+		DispatcherTimer recheck = new() { Interval = TimeSpan.FromSeconds(3) };
+		recheck.Tick += (_, _) => guide.Recheck();
+		recheck.Start();
 		Closed += (_, _) =>
 		{
+			recheck.Stop();
 			guide.Finished -= CloseSoon;
 			guide.Dismiss();
 		};

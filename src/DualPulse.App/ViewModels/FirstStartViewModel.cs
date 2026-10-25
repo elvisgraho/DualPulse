@@ -70,9 +70,23 @@ public sealed partial class FirstStartViewModel : ObservableObject
 
 	private string? driverPage;
 
+	// While the picked mode's driver is missing (the window checks every few seconds): finishes once it is installed.
+	public void Recheck()
+	{
+		if (DriverMissing && SelectedChoice is { } choice)
+		{
+			CheckDriver(choice);
+		}
+	}
+
 	private void Choose(SetupChoice choice)
 	{
 		settings.Update(s => s with { Emulation = choice.Kind });
+		CheckDriver(choice);
+	}
+
+	private void CheckDriver(SetupChoice choice)
+	{
 		(string? name, string? page) = choice.Kind switch
 		{
 			PadKind.Xbox360 or PadKind.DualShock4 when !backend.IsAvailable => ("ViGEmBus", DriverPages.ViGEmBus),

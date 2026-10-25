@@ -71,6 +71,11 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 
 	private static readonly TimeSpan PadGrace = TimeSpan.FromSeconds(10);
 
+	// While the chosen mode's driver is missing, how often it is looked for again (installing it needs no restart).
+	public static readonly TimeSpan DriverRecheck = TimeSpan.FromSeconds(5);
+
+	private ITimer? driverTimer;
+
 	// Game audio from a virtual DualSense arrives at 48 kHz.
 	private const int GameAudioRate = 48000;
 
@@ -182,6 +187,8 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			disposed = true;
 			DropLease();
 			generation++;
+			driverTimer?.Dispose();
+			driverTimer = null;
 		});
 		// Unplugging the pad is worth a short wait at shutdown; a hung usbip doesn't hold the app.
 		queue?.Dispose();
@@ -292,6 +299,10 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 					logger.LogWarning("Emulation unavailable: {Reason}", backend.UnavailableReason);
 				}
 				SetStatus(EmulationStatus.DriverMissing);
+				if (driverTimer == null && !disposed)
+				{
+					driverTimer = time.CreateTimer(_ => Update(() => ClearDriverTimer()), null, DriverRecheck, Timeout.InfiniteTimeSpan);
+				}
 			}
 			else
 			{
@@ -435,6 +446,13 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			hook = null;
 			current.Unhook();
 		}
+	}
+
+	// Caller holds gate. The next reconcile starts another check if the driver is still missing.
+	private void ClearDriverTimer()
+	{
+		driverTimer?.Dispose();
+		driverTimer = null;
 	}
 
 	// Caller holds gate.
