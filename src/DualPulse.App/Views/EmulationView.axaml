@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.EmulationView"
+             x:DataType="vm:EmulationViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <TextBlock Classes="title" Text="Emulation" />
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="VIRTUAL CONTROLLER" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="What games see" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Native: games use your DualSense as it is." />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center"
+                      ItemsSource="{Binding EmulationChoices}" SelectedItem="{Binding SelectedEmulation}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:EmulationChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowDualSenseHint}"
+                     Text="Games with DualSense support get adaptive triggers, lights and vibration, also over Bluetooth. Works best with Hide my DualSense on. Needs the free usbip-win2 driver." />
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Game sound on the controller speaker" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Plays a game's controller sounds on the controller's speaker." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding GameSoundOnController}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Status" />
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowViGEmBus}">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding DriverText}" />
+            <Button Grid.Column="2" Content="Get ViGEmBus" Command="{Binding GetViGEmBusCommand}" IsVisible="{Binding DriverMissing}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="HIDE THE DUALSENSE" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Hide my DualSense from other apps" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Games then see only the virtual controller. Stays on after DualPulse closes." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center"
+                          IsChecked="{Binding HideController}" IsEnabled="{Binding CanToggleHide}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding HideStatusText}" />
+            <Button Grid.Column="2" Content="Get HidHide" Command="{Binding GetHidHideCommand}" IsVisible="{Binding HidHideMissing}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

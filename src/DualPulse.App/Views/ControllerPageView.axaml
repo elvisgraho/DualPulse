@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             xmlns:views="using:DualPulse.App.Views"
+             xmlns:emu="using:DualPulse.Emulation"
+             x:Class="DualPulse.App.Views.ControllerPageView"
+             x:DataType="vm:ControllerPageViewModel">
+  <Grid RowDefinitions="Auto,Auto,Auto,16,*">
+    <!-- Title and section chips, then the profile selector on its own line -->
+    <StackPanel Spacing="16">
+      <StackPanel Orientation="Horizontal" Spacing="24">
+        <TextBlock Classes="title" VerticalAlignment="Center" Text="Controller" />
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Classes="chip" Classes.selected="{Binding IsLighting}" Content="Lighting"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Lighting}" />
+          <Button Classes="chip" Classes.selected="{Binding IsTriggers}" Content="Triggers"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Triggers}" />
+          <Button Classes="chip" Classes.selected="{Binding IsRumble}" Content="Rumble"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Rumble}" />
+          <Button Classes="chip" Classes.selected="{Binding IsGyro}" Content="Gyro"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Gyro}" />
+          <Button Classes="chip" Classes.selected="{Binding IsAudio}" Content="Audio"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Audio}" />
+        </StackPanel>
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasProfiles}">
+          <TextBlock Classes="secondary" VerticalAlignment="Center" Text="Profile" />
+          <ComboBox MinWidth="200" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProfileChoice">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Content="Add game..." Command="{Binding StartAddGameCommand}" ToolTip.Tip="Make a profile for a game that is running now" />
+          <Button Content="Remove" Command="{Binding RemoveProfileCommand}" IsVisible="{Binding CanRemove}" />
+          <TextBlock Classes="caption" VerticalAlignment="Center" Margin="8,0,0,0" Text="● Active now" IsVisible="{Binding IsActiveNow}" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Picking a running program for a new game profile -->
+    <Border Grid.Row="1" Classes="card" Margin="0,16,16,0" MaxWidth="720" HorizontalAlignment="Left" IsVisible="{Binding IsAddingGame}">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="caption" Text="ADD GAME PROFILE" />
+        <TextBlock Classes="secondary" TextWrapping="Wrap" Text="Start the game first, then pick it here. Its settings apply whenever that game is in front." />
+        <TextBlock Classes="caption" Text="No programs with a window found." IsVisible="{Binding !RunningGames.Count}" />
+        <ScrollViewer MaxHeight="280">
+        <ItemsControl ItemsSource="{Binding RunningGames}" Margin="0,0,12,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="emu:RunningWindow">
+              <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                      Command="{Binding $parent[ItemsControl].((vm:ControllerPageViewModel)DataContext).PickGameCommand}" CommandParameter="{Binding}">
+                <StackPanel>
+                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="caption" Text="{Binding Exe}" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        </ScrollViewer>
+        <Button Content="Cancel" Command="{Binding CancelAddGameCommand}" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock Grid.Row="2" Classes="caption" Margin="0,16,0,0" Text="Same for all games." IsVisible="{Binding ShowSameForAllGames}" />
+
+    <Panel Grid.Row="4">
+      <views:LightingView DataContext="{Binding Lighting}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsLighting}" />
+      <views:TriggersView DataContext="{Binding Triggers}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsTriggers}" />
+      <views:RumbleView DataContext="{Binding Rumble}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsRumble}" />
+      <views:GyroView DataContext="{Binding Gyro}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsGyro}" />
+      <views:AudioView DataContext="{Binding Audio}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsAudio}" />
+    </Panel>
+  </Grid>
+</UserControl>

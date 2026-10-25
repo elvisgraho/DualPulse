@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             xmlns:views="using:DualPulse.App.Views"
+             x:Class="DualPulse.App.Views.GyroView"
+             x:DataType="vm:GyroViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <views:ProfileStripView DataContext="{Binding Strip}" />
+
+      <StackPanel Classes="profileContent" Spacing="16" IsEnabled="{Binding Strip.CanEdit}">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="GYRO AIMING" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Aim by moving the controller" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Move the controller to fine-tune your aim, on top of the right stick." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding Enabled}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsEnabled="{Binding Enabled}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Sends to" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Right stick works in every game. Mouse is smoother, in games that take mouse and controller together." />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding OutputChoices}" SelectedItem="{Binding SelectedOutput}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LabelledChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsEnabled="{Binding Enabled}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Active" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Most people use it while aiming (L2)." />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding ActivationChoices}" SelectedItem="{Binding SelectedActivation}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LabelledChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsEnabled="{Binding Enabled}">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="FEEL" />
+          <Grid ColumnDefinitions="Auto,16,*,16,48">
+            <TextBlock VerticalAlignment="Center" Text="Sensitivity" />
+            <Slider Grid.Column="2" Minimum="0.1" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding Sensitivity}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding Sensitivity, StringFormat={}{0:0.0}x}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Turn with" />
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding AxisChoices}" SelectedItem="{Binding SelectedAxis}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LabelledChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Invert left/right" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding InvertX}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Invert up/down" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding InvertY}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      </StackPanel>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="CALIBRATION" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" TextWrapping="Wrap" Text="{Binding CalibrationText}" />
+            <Button Grid.Column="2" Content="Calibrate" Command="{Binding CalibrateCommand}" IsEnabled="{Binding CanCalibrate}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

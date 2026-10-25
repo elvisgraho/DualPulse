@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DualPulse.App.ViewModels"
+        xmlns:views="using:DualPulse.App.Views"
+        x:Class="DualPulse.App.Views.ShellWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="DualPulse"
+        Icon="/Assets/dualpulse.ico"
+        Width="1040" Height="680" MinWidth="760" MinHeight="520"
+        Background="{StaticResource Bg}">
+  <Grid RowDefinitions="*,28" ColumnDefinitions="64,*">
+    <!-- Navigation rail -->
+    <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource Surface}"
+            BorderBrush="{StaticResource Border}" BorderThickness="0,0,1,0">
+      <StackPanel Spacing="8" Margin="0,16" HorizontalAlignment="Center">
+        <Button Classes="rail" Classes.selected="{Binding IsHome}" ToolTip.Tip="Home" AutomationProperties.Name="Home"
+                Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Page.Home}">
+          <PathIcon Data="M3,10.5 L12,3 L21,10.5 L21,21 L15,21 L15,15 L9,15 L9,21 L3,21 Z" />
+        </Button>
+        <Button Classes="rail" Classes.selected="{Binding IsController}" ToolTip.Tip="Controller: lighting, triggers, rumble"
+                AutomationProperties.Name="Controller" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Page.Controller}">
+          <PathIcon Data="M7,8 L17,8 C19.8,8 22,10.2 22,13 L22,15 C22,17.2 20.2,19 18,19 C16.9,19 16,18.4 15.5,17.5 L14.8,16 L9.2,16 L8.5,17.5 C8,18.4 7.1,19 6,19 C3.8,19 2,17.2 2,15 L2,13 C2,10.2 4.2,8 7,8 Z M6,11 L6,12 L5,12 L5,13 L6,13 L6,14 L7,14 L7,13 L8,13 L8,12 L7,12 L7,11 Z" />
+        </Button>
+        <Button Classes="rail" Classes.selected="{Binding IsMapping}" ToolTip.Tip="Mapping: PC control" AutomationProperties.Name="Mapping"
+                Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Page.Mapping}">
+          <PathIcon Data="M5,3 L19,13 L12.5,13.6 L16,20.5 L13.5,21.7 L10,14.9 L5,19 Z" />
+        </Button>
+        <Button Classes="rail" Classes.selected="{Binding IsEmulation}" ToolTip.Tip="Emulation" AutomationProperties.Name="Emulation"
+                Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Page.Emulation}">
+          <PathIcon Data="M3,7 L16,7 L16,4 L21,8 L16,12 L16,9 L3,9 Z M21,15 L8,15 L8,12 L3,16 L8,20 L8,17 L21,17 Z" />
+        </Button>
+        <Button Classes="rail" Classes.selected="{Binding IsMods}" ToolTip.Tip="Mods" AutomationProperties.Name="Mods"
+                Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Page.Mods}">
+          <PathIcon Data="M10,3 L14,3 L14,6 C14,6.6 14.4,7 15,7 L18,7 C19.1,7 20,7.9 20,9 L20,12 L17,12 C16.4,12 16,12.4 16,13 L16,15 C16,15.6 16.4,16 17,16 L20,16 L20,19 C20,20.1 19.1,21 18,21 L6,21 C4.9,21 4,20.1 4,19 L4,16 L7,16 C7.6,16 8,15.6 8,15 L8,13 C8,12.4 7.6,12 7,12 L4,12 L4,9 C4,7.9 4.9,7 6,7 L9,7 C9.6,7 10,6.6 10,6 Z" />
+        </Button>
+        <Button Classes="rail" Classes.selected="{Binding IsSettings}" ToolTip.Tip="Settings" AutomationProperties.Name="Settings"
+                Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:Page.Settings}">
+          <PathIcon Data="M3,6 L13,6 L13,8 L3,8 Z M17,6 L21,6 L21,8 L17,8 Z M13,4 L17,4 L17,10 L13,10 Z M3,16 L7,16 L7,18 L3,18 Z M11,16 L21,16 L21,18 L11,18 Z M7,14 L11,14 L11,20 L7,20 Z" />
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <!-- Content host -->
+    <Panel Grid.Row="0" Grid.Column="1" Margin="32">
+      <views:HomeView DataContext="{Binding Home}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsHome}" />
+      <views:ControllerPageView DataContext="{Binding ControllerPage}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsController}" />
+      <views:MappingView DataContext="{Binding Mapping}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsMapping}" />
+      <views:EmulationView DataContext="{Binding Emulation}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsEmulation}" />
+      <views:ModsView DataContext="{Binding Mods}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsMods}" />
+      <views:SettingsView DataContext="{Binding SettingsPage}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsSettings}" />
+    </Panel>
+
+    <!-- Status bar -->
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{StaticResource Surface}"
+            BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="16,0">
+      <TextBlock Classes="caption" VerticalAlignment="Center" Text="{Binding StatusText}" />
+    </Border>
+  </Grid>
+</Window>

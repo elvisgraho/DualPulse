@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\src\DualPulse.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>DualPulse.Probe</RootNamespace>
+    <!-- A Windows development tool: it drives the Windows implementations in DualPulse.Emulation directly. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Concentus" Version="2.2.2" />
+    <PackageReference Include="HidSharp" Version="2.6.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DualPulse.Core\DualPulse.Core.csproj" />
+    <ProjectReference Include="..\..\src\DualPulse.Emulation\DualPulse.Emulation.csproj" />
+  </ItemGroup>
+</Project>

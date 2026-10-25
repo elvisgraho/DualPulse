@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DualPulse.props" />
+  <PropertyGroup>
+    <RootNamespace>DualPulse.Core</RootNamespace>
+    <!-- Required by the LibraryImport source generator (TimerResolution's winmm P/Invoke). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Concentus" Version="2.2.2" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
+    <PackageReference Include="HidSharp" Version="2.6.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DualPulse.Core.Tests" />
+  </ItemGroup>
+</Project>

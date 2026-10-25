@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DualPulse.App.Views.ToastWindow"
+        WindowDecorations="None" Topmost="True" ShowActivated="False" ShowInTaskbar="False" CanResize="False"
+        SizeToContent="WidthAndHeight" Background="Transparent" TransparencyLevelHint="Transparent">
+  <Border Classes="card" Width="340" Padding="16" Margin="0">
+    <Grid ColumnDefinitions="Auto,12,*">
+      <Image Source="/Assets/dualpulse.png" Width="28" Height="28" VerticalAlignment="Top" />
+      <StackPanel Grid.Column="2" Spacing="4">
+        <TextBlock x:Name="TitleText" Classes="subtitle" />
+        <TextBlock x:Name="MessageText" Classes="secondary" TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

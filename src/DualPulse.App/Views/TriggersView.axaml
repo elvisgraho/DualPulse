@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             xmlns:views="using:DualPulse.App.Views"
+             xmlns:svc="using:DualPulse.App.Services"
+             x:Class="DualPulse.App.Views.TriggersView"
+             x:DataType="vm:TriggersViewModel">
+  <UserControl.DataTemplates>
+    <!-- One trigger's effect editor. -->
+    <DataTemplate DataType="vm:TriggerEditorViewModel">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="{Binding Title}" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Effect" />
+            <ComboBox Grid.Column="2" MinWidth="180" ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:TriggerKindChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,48" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto" IsVisible="{Binding ShowZones}">
+            <TextBlock Grid.Row="0" VerticalAlignment="Center" Classes="secondary" Text="Starts at zone" />
+            <Slider Grid.Row="0" Grid.Column="2" Minimum="{Binding StartMinimum}" Maximum="{Binding StartMaximum}"
+                    TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Start}" />
+            <TextBlock Grid.Row="0" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Start}" />
+
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" Classes="secondary" Text="Ends at zone" IsVisible="{Binding ShowEnd}" />
+            <Slider Grid.Row="2" Grid.Column="2" Minimum="{Binding EndMinimum}" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
+                    Value="{Binding End}" IsVisible="{Binding ShowEnd}" />
+            <TextBlock Grid.Row="2" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding End}" IsVisible="{Binding ShowEnd}" />
+
+            <TextBlock Grid.Row="4" VerticalAlignment="Center" Classes="secondary" Text="{Binding StrengthLabel}" />
+            <Slider Grid.Row="4" Grid.Column="2" Minimum="1" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Strength}" />
+            <TextBlock Grid.Row="4" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Strength}" />
+
+            <TextBlock Grid.Row="6" VerticalAlignment="Center" Classes="secondary" Text="Frequency" IsVisible="{Binding ShowFrequency}" />
+            <Slider Grid.Row="6" Grid.Column="2" Minimum="1" Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True"
+                    Value="{Binding Frequency}" IsVisible="{Binding ShowFrequency}" />
+            <TextBlock Grid.Row="6" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding Frequency, StringFormat={}{0} Hz}" IsVisible="{Binding ShowFrequency}" />
+          </Grid>
+          <!-- Range: shapes the analog value games see; works with any effect, including Off. -->
+          <StackPanel Spacing="2">
+            <TextBlock Text="Range games see" />
+            <TextBlock Classes="caption" TextWrapping="Wrap" Text="Deadzone ignores the start of the pull. Starts at makes a light touch count." />
+          </StackPanel>
+          <Grid ColumnDefinitions="Auto,16,*,16,48" RowDefinitions="Auto,12,Auto">
+            <TextBlock Grid.Row="0" VerticalAlignment="Center" Classes="secondary" Text="Deadzone" />
+            <Slider Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Deadzone}" />
+            <TextBlock Grid.Row="0" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding Deadzone, StringFormat={}{0}%}" />
+
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" Classes="secondary" Text="Starts at" />
+            <Slider Grid.Row="2" Grid.Column="2" Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding StartAt}" />
+            <TextBlock Grid.Row="2" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding StartAt, StringFormat={}{0}%}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <views:ProfileStripView DataContext="{Binding Strip}" />
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="TRAVEL" />
+          <Grid ColumnDefinitions="Auto,16,*" RowDefinitions="Auto,12,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="L2" />
+            <ProgressBar Grid.Column="2" Classes="travel" Minimum="0" Maximum="1" Value="{Binding LeftTravel}" />
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" Classes="secondary" Text="R2" />
+            <ProgressBar Grid.Row="2" Grid.Column="2" Classes="travel" Minimum="0" Maximum="1" Value="{Binding RightTravel}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <StackPanel Classes="profileContent" Spacing="16" IsEnabled="{Binding Strip.CanEdit}">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="PRESETS" />
+          <ItemsControl ItemsSource="{Binding Presets}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="svc:TriggerPreset">
+                <Button Content="{Binding}"
+                        Command="{Binding $parent[ItemsControl].((vm:TriggersViewModel)DataContext).ApplyPresetCommand}"
+                        CommandParameter="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Same effect on both triggers" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding Linked}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <ContentControl Content="{Binding Left}" />
+      <ContentControl Content="{Binding Right}" IsVisible="{Binding !Linked}" />
+      </StackPanel>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

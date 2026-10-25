@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.AudioView"
+             x:DataType="vm:AudioViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="CONTROLLER AUDIO" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Play PC sound on the controller" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Plays your PC's sound on the controller's speaker or earbuds. Bluetooth only; on a cable, pick the controller in Windows sound settings." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding Enabled}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsEnabled="{Binding Enabled}">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="SOURCE AND OUTPUT" />
+          <Grid ColumnDefinitions="*,16,Auto,8,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Source" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="To hear just one game on the controller, set that game's output to a spare device in Windows (Settings, Sound, Volume mixer), then pick that device here." />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="220" VerticalAlignment="Center" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LabelledChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="4" VerticalAlignment="Center" Content="Refresh" Command="{Binding RefreshSourcesCommand}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Plays on" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Auto switches to earbuds when you plug them into the controller." />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding OutputChoices}" SelectedItem="{Binding SelectedOutput}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LabelledChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,48">
+            <TextBlock VerticalAlignment="Center" Text="Volume" />
+            <Slider Grid.Column="2" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Volume}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Volume, StringFormat={}{0}%}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="FEEL PC SOUND" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Feel PC sound in the grips" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Games, music and video become vibration you feel in your hands. Bluetooth only." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding AudioHaptics}" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,48" IsEnabled="{Binding AudioHaptics}">
+            <TextBlock VerticalAlignment="Center" Text="Intensity" />
+            <Slider Grid.Column="2" Minimum="0" Maximum="200" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding AudioHapticsIntensity}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding AudioHapticsIntensity, StringFormat={}{0}%}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsEnabled="{Binding AudioHaptics}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Style" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Punchy turns bass into clear thumps. Natural follows the sound as it is." />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding AudioStyleChoices}" SelectedItem="{Binding SelectedAudioStyle}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:AudioStyleChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

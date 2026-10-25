@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DualPulse.props" />
+  <PropertyGroup>
+    <RootNamespace>DualPulse.Emulation</RootNamespace>
+    <!-- LibraryImport-generated marshalling for the HidHide and device-instance P/Invokes. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
+    <!-- WASAPI loopback capture for system-audio haptics (Windows implementation of ISystemAudioSource). -->
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DualPulse.Core\DualPulse.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.ProfileStripView"
+             x:DataType="vm:ProfileStripViewModel">
+  <!-- Shown while a game profile is selected: whose settings the page below shows, and the switch. -->
+  <Border Classes="card" IsVisible="{Binding IsVisible}">
+    <Grid ColumnDefinitions="*,16,Auto">
+      <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Text}" />
+      <Button Grid.Column="2" Classes="accent" Content="Customize for this game" Command="{Binding CustomizeCommand}" IsVisible="{Binding !IsCustom}" />
+      <Button Grid.Column="2" Content="Use default" Command="{Binding UseDefaultCommand}" IsVisible="{Binding IsCustom}" />
+    </Grid>
+  </Border>
+</UserControl>

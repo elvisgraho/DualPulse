@@ -1,0 +1,124 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.MappingView"
+             x:DataType="vm:MappingViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <TextBlock Classes="title" Text="Mapping" />
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="PC CONTROL" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Use the controller as mouse and keyboard" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Shortcut on the controller: hold PS and press Options. While it's on, games don't get controller input." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center"
+                          IsChecked="{Binding PcControlOn, Mode=OneWay}" Command="{Binding TogglePcControlCommand}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Status" />
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="POINTER" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Touchpad as mouse" />
+              <TextBlock Classes="caption" Text="Tap to click, two-finger tap to right-click, two fingers to scroll, press to drag." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding TouchpadEnabled}" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,48" IsEnabled="{Binding TouchpadEnabled}">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Touchpad speed" />
+            <Slider Grid.Column="2" Minimum="0.2" Maximum="3" Value="{Binding TouchpadSpeed}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding TouchpadSpeed, StringFormat={}{0:0.0}x}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Right stick moves the pointer" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding StickMouseEnabled}" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,48" IsEnabled="{Binding StickMouseEnabled}">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Stick speed" />
+            <Slider Grid.Column="2" Minimum="0.2" Maximum="3" Value="{Binding StickSpeed}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding StickSpeed, StringFormat={}{0:0.0}x}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Left stick scrolls" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding StickScrollEnabled}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="HOLD LAYERS" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Hold L1: window switcher" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Opens Alt+Tab. D-pad or right stick moves, R1 next, L2 previous, Cross picks, Circle cancels, let go to switch. A quick tap returns to the last window." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding WindowSwitcherEnabled}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Hold R1: media controls" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="D-pad up/down or right stick: volume. D-pad left/right: previous/next track. Cross: play/pause. Square: mute." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding MediaLayerEnabled}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="caption" VerticalAlignment="Center" Text="BUTTONS" />
+            <Button Grid.Column="1" Content="Reset to defaults" Command="{Binding ResetButtonsCommand}" />
+          </Grid>
+          <TextBlock Classes="caption" TextWrapping="Wrap"
+                     Text="Modifier keys combine across buttons, e.g. Alt on one button and F4 on another." />
+          <ItemsControl ItemsSource="{Binding ButtonRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ButtonRow">
+                <Grid ColumnDefinitions="*,16,Auto" Margin="0,4">
+                  <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Label}" />
+                    <TextBlock Classes="caption" Text="{Binding Note}" IsVisible="{Binding !IsEditable}" />
+                  </StackPanel>
+                  <ComboBox Grid.Column="2" MinWidth="200" IsEnabled="{Binding IsEditable}"
+                            ItemsSource="{Binding $parent[ItemsControl].((vm:MappingViewModel)DataContext).ActionChoices}"
+                            SelectedItem="{Binding SelectedAction}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:PcActionChoice">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

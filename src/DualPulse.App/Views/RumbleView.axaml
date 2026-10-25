@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.RumbleView"
+             x:DataType="vm:RumbleViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="MOTORS" />
+          <Grid ColumnDefinitions="Auto,16,*" RowDefinitions="Auto,12,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Left (heavy)" />
+            <ProgressBar Grid.Column="2" Classes="travel" Minimum="0" Maximum="1" Value="{Binding LeftLevel}" />
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" Classes="secondary" Text="Right (light)" />
+            <ProgressBar Grid.Row="2" Grid.Column="2" Classes="travel" Minimum="0" Maximum="1" Value="{Binding RightLevel}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding CanTest}">
+            <Button Content="Test left" Command="{Binding TestLeftCommand}" />
+            <Button Content="Test right" Command="{Binding TestRightCommand}" />
+            <Button Content="Test both" Command="{Binding TestBothCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="GAME RUMBLE" />
+          <Grid ColumnDefinitions="Auto,16,*,16,48">
+            <TextBlock VerticalAlignment="Center" Text="Strength" />
+            <Slider Grid.Column="2" Minimum="0" Maximum="200" TickFrequency="10" IsSnapToTickEnabled="True"
+                    Value="{Binding Strength}" IsEnabled="{Binding !Muted}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding Strength, StringFormat={}{0}%}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Mute game rumble" />
+              <TextBlock Classes="caption" Text="Games keep working; the controller just doesn't vibrate." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding Muted}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="RUMBLE MODE" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Haptics over Bluetooth" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Over Bluetooth, game rumble uses the DualSense's fine haptics instead of classic rumble." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding BluetoothHaptics}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Mode" />
+              <TextBlock Classes="caption" Text="{Binding ModeHint}" IsVisible="{Binding ModeHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding ModeChoices}" SelectedItem="{Binding SelectedMode}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:RumbleModeChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

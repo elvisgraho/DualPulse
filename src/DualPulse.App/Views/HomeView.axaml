@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             xmlns:views="using:DualPulse.App.Views"
+             xmlns:controls="using:DualPulse.App.Controls"
+             xmlns:core="using:DualPulse.Core.Protocol"
+             x:Class="DualPulse.App.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+  <Grid ColumnDefinitions="3*,24,2*">
+    <!-- Live controller -->
+    <Border Grid.Column="0" Classes="card">
+      <Grid RowDefinitions="Auto,*">
+        <TextBlock Classes="subtitle" Text="Controller" />
+        <controls:ControllerView Grid.Row="1" Margin="0,16,0,0" Snapshot="{Binding Snapshot}"
+                                 Opacity="{Binding IsConnected, Converter={x:Static views:Converters.ConnectedOpacity}}">
+          <controls:ControllerView.Transitions>
+            <Transitions>
+              <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+            </Transitions>
+          </controls:ControllerView.Transitions>
+        </controls:ControllerView>
+      </Grid>
+    </Border>
+
+    <!-- Status and quick actions -->
+    <ScrollViewer Grid.Column="2">
+      <StackPanel Spacing="12">
+        <Border Classes="card status" Classes.connected="{Binding IsConnected}">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="caption" Text="CONNECTION" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Ellipse Classes="indicator" Width="8" Height="8" VerticalAlignment="Center" />
+              <TextBlock Classes="subtitle" Text="{Binding ConnectionText}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card status">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="caption" Text="BATTERY" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="subtitle" Text="{Binding BatteryPercent, StringFormat={}{0}%}" IsVisible="{Binding IsConnected}" />
+              <TextBlock Classes="subtitle secondary" Text="—" IsVisible="{Binding !IsConnected}" />
+              <TextBlock Classes="secondary" VerticalAlignment="Center" Text="Charging" IsVisible="{Binding IsCharging}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card status">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="caption" Text="EMULATION" />
+            <TextBlock Classes="subtitle" Text="{Binding EmulationText}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card status" IsVisible="{Binding IsConnected}">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="caption" Text="DEVICE" />
+            <TextBlock Classes="subtitle" Text="{Binding FirmwareText}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="16">
+            <TextBlock Classes="caption" Text="QUICK ACTIONS" />
+            <StackPanel Spacing="8">
+              <TextBlock Classes="secondary" Text="Lightbar" />
+              <ItemsControl ItemsSource="{Binding LightbarSwatches}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="core:Rgb">
+                    <Button Classes="swatch" Background="{Binding Converter={x:Static views:Converters.RgbToBrush}}"
+                            Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).SetLightbarCommand}"
+                            CommandParameter="{Binding}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <StackPanel Spacing="8">
+              <TextBlock Classes="secondary" Text="Adaptive triggers" />
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding TriggerPresets}"
+                        SelectedItem="{Binding SelectedTriggerPreset}" PlaceholderText="Custom" />
+            </StackPanel>
+            <Button Content="Turn controller off" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Command="{Binding PowerOffCommand}" ToolTip.Tip="Bluetooth only" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

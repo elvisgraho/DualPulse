@@ -1,0 +1,19 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Design tokens: the only colours the UI uses. No gradients, blur or transparency effects. -->
+  <SolidColorBrush x:Key="Bg" Color="#0D0E11" />
+  <SolidColorBrush x:Key="Surface" Color="#15171B" />
+  <SolidColorBrush x:Key="SurfaceRaised" Color="#1C1F24" />
+  <SolidColorBrush x:Key="Border" Color="#262A31" />
+  <SolidColorBrush x:Key="TextPrimary" Color="#ECEDEF" />
+  <SolidColorBrush x:Key="TextSecondary" Color="#9097A1" />
+  <SolidColorBrush x:Key="TextMuted" Color="#5D646E" />
+  <SolidColorBrush x:Key="Accent" Color="#C9A86A" />
+  <SolidColorBrush x:Key="AccentMuted" Color="#29C9A86A" />
+  <SolidColorBrush x:Key="Positive" Color="#5FB98E" />
+  <SolidColorBrush x:Key="Warning" Color="#D9A441" />
+  <SolidColorBrush x:Key="Critical" Color="#D9645A" />
+
+  <CornerRadius x:Key="ControlRadius">10</CornerRadius>
+  <CornerRadius x:Key="CardRadius">14</CornerRadius>
+</ResourceDictionary>

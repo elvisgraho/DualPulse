@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="DualPulse.Core/DualPulse.Core.csproj" />
+  <Project Path="DualPulse.Core.Tests/DualPulse.Core.Tests.csproj" />
+  <Project Path="DualPulse.Emulation/DualPulse.Emulation.csproj" />
+  <Project Path="DualPulse.App/DualPulse.App.csproj" />
+  <Project Path="DualPulse.App.Tests/DualPulse.App.Tests.csproj" />
+  <Project Path="../tools/DualPulse.Probe/DualPulse.Probe.csproj" />
+</Solution>

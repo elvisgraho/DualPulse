@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.ModsView"
+             x:DataType="vm:ModsViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <TextBlock Classes="title" Text="Mods" />
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="MOD SERVER (DSX COMPATIBLE)" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Let game mods control the triggers and lights" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="For games with DSX mods (v2 and v3.1). Only programs on this PC can connect." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding Enabled}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Port" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+              <TextBlock Classes="caption" VerticalAlignment="Center" Text="Use 1-65535" IsVisible="{Binding PortInvalid}" />
+              <TextBox Width="100" Text="{Binding PortText}" Classes.invalid="{Binding PortInvalid}" />
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Tell mods the port" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Lets DSX mods find DualPulse on their own." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding WritePortFiles}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Status" />
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="ACTIVITY" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding LastPacketText}" />
+              <TextBlock Classes="caption" Text="{Binding CountsText}" />
+            </StackPanel>
+            <Button Grid.Column="2" VerticalAlignment="Center" Content="Give control back" Command="{Binding GiveControlBackCommand}"
+                    ToolTip.Tip="Discard what the mod set and use your own settings again" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding RecentInstructions}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Classes="secondary" Margin="0,2" Text="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,37 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="DualPulse.App.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://DualPulse/Theme/Tokens.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Dark"
+                               Accent="#C9A86A"
+                               AltHigh="#0D0E11"
+                               RegionColor="#0D0E11"
+                               BaseHigh="#ECEDEF"
+                               ChromeLow="#15171B"
+                               ChromeMediumLow="#15171B"
+                               ChromeMedium="#1C1F24"
+                               ChromeHigh="#262A31"
+                               ErrorText="#D9645A" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <StyleInclude Source="avares://DualPulse/Theme/Controls.axaml" />
+  </Application.Styles>
+
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <!-- The menu is built in App.axaml.cs so its status line and switches stay current. -->
+      <TrayIcon Icon="/Assets/dualpulse.ico" ToolTipText="DualPulse" Clicked="OnTrayClicked" />
+    </TrayIcons>
+  </TrayIcon.Icons>
+</Application>

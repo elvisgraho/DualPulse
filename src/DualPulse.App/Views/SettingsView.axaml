@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             x:Class="DualPulse.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <TextBlock Classes="title" Text="Settings" />
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="POWER (BLUETOOTH)" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="PS + Triangle turns the controller off" />
+              <TextBlock Classes="caption" Text="Hold PS and press Triangle." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding ShortcutEnabled}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Turn off when idle" />
+            <ComboBox Grid.Column="2" MinWidth="180"
+                      ItemsSource="{Binding IdleTimeoutChoices}" SelectedItem="{Binding SelectedIdleTimeout}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:IdleTimeoutChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Turn off when DualPulse quits" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding PowerOffOnExit}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="APP" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Start minimized to the tray" />
+              <TextBlock Classes="caption" Text="Closing the window always keeps DualPulse running in the tray." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding StartMinimized}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Start with Windows" />
+              <TextBlock Classes="caption" Text="Opens minimized to the tray when you sign in." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding StartWithWindows}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="ABOUT" />
+          <StackPanel Spacing="2">
+            <TextBlock Text="{Binding Version, StringFormat=DualPulse {0}}" />
+            <TextBlock Classes="caption" Text="Free and open source. Not affiliated with Sony." />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Open logs folder" Command="{Binding OpenLogsFolderCommand}" />
+            <Button Content="Third-party notices" Command="{Binding OpenThirdPartyNoticesCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>
