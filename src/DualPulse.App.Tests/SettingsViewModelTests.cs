@@ -98,6 +98,23 @@ public sealed class SettingsViewModelTests
 	}
 
 	[Fact]
+	public async Task Settings_ReportProblem_CopiesDiagnosticsAndOpensTheBugForm()
+	{
+		List<string> copied = [];
+		SettingsViewModel viewModel = new(settings, @"C:\data\logs", opened.Add, diagnostics: () => "report", copy: text =>
+		{
+			copied.Add(text);
+			return Task.CompletedTask;
+		});
+
+		await viewModel.ReportProblemCommand.ExecuteAsync(null);
+
+		Assert.Equal(["report"], copied);
+		Assert.Equal("https://github.com/elvisgraho/DualPulse/issues/new?template=bug_report.yml", opened[^1]);
+		Assert.Equal("Diagnostics copied. Paste them into the form.", viewModel.DiagnosticsStatus);
+	}
+
+	[Fact]
 	public void Settings_OpenFails_DoesNotThrow()
 	{
 		SettingsViewModel viewModel = new(settings, @"C:\data\logs", _ => throw new System.ComponentModel.Win32Exception("No application is associated"));

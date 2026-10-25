@@ -83,6 +83,7 @@
             <Button Content="Open logs folder" Command="{Binding OpenLogsFolderCommand}" />
             <Button Content="Third-party notices" Command="{Binding OpenThirdPartyNoticesCommand}" />
             <Button Content="Copy diagnostics" Command="{Binding CopyDiagnosticsCommand}" />
+            <Button Content="Report a problem" Command="{Binding ReportProblemCommand}" />
           </StackPanel>
           <TextBlock Classes="caption" Text="{Binding DiagnosticsStatus}"
                      IsVisible="{Binding DiagnosticsStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />

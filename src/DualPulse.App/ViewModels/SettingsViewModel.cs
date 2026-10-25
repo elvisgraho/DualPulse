@@ -12,6 +12,8 @@ public sealed record IdleTimeoutChoice(string Label, int Minutes);
 // The Settings page. Every change is written straight to the settings; services react to ISettingsService.Changed.
 public sealed partial class SettingsViewModel : ObservableObject
 {
+	private const string BugReportForm = "https://github.com/elvisgraho/DualPulse/issues/new?template=bug_report.yml";
+
 	private readonly ISettingsService settings;
 
 	private readonly string logsFolder;
@@ -140,18 +142,39 @@ public sealed partial class SettingsViewModel : ObservableObject
 	[RelayCommand]
 	private async Task CopyDiagnostics()
 	{
+		if (await TryCopyDiagnostics())
+		{
+			DiagnosticsStatus = "Copied. Paste it into your bug report.";
+		}
+	}
+
+	// Copies the diagnostics, then opens the bug report form on GitHub.
+	[RelayCommand]
+	private async Task ReportProblem()
+	{
+		bool copied = await TryCopyDiagnostics();
+		Open(BugReportForm);
+		if (copied)
+		{
+			DiagnosticsStatus = "Diagnostics copied. Paste them into the form.";
+		}
+	}
+
+	private async Task<bool> TryCopyDiagnostics()
+	{
 		if (diagnostics == null || copy == null)
 		{
-			return;
+			return false;
 		}
 		try
 		{
 			await copy(diagnostics());
-			DiagnosticsStatus = "Copied. Paste it into your bug report.";
+			return true;
 		}
 		catch (Exception exception) when (exception is InvalidOperationException or System.Runtime.InteropServices.COMException)
 		{
 			DiagnosticsStatus = "Couldn't copy. Try again.";
+			return false;
 		}
 	}
 
