@@ -75,6 +75,7 @@ public sealed class LightingViewModelTests
 
 		Assert.Equal(new Rgb(0xFF, 0x3B, 0x3B), settings.Current.Lightbar);
 		Assert.Equal("#FF3B3B", viewModel.HexColour);
+		Assert.Equal([new Rgb(0xFF, 0x3B, 0x3B)], viewModel.Swatches.Where(s => s.Selected).Select(s => s.Colour));
 	}
 
 	[Fact]

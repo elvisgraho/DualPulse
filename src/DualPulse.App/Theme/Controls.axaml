@@ -128,6 +128,16 @@
     <Setter Property="CornerRadius" Value="16" />
     <Setter Property="BorderBrush" Value="{StaticResource Border}" />
   </Style>
+  <!-- The ring around the swatch of the colour set now. -->
+  <Style Selector="Border.swatch-ring">
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.swatch-ring.selected">
+    <Setter Property="BorderBrush" Value="{StaticResource TextPrimary}" />
+  </Style>
   <Style Selector="Button.swatch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{Binding $parent[Button].Background}" />
     <Setter Property="BorderBrush" Value="{StaticResource TextSecondary}" />

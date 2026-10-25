@@ -72,10 +72,12 @@
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="core:Rgb">
-                    <Button Classes="swatch" Background="{Binding Converter={x:Static views:Converters.RgbToBrush}}"
-                            Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).SetLightbarCommand}"
-                            CommandParameter="{Binding}" />
+                  <DataTemplate x:DataType="vm:SwatchChoice">
+                    <Border Classes="swatch-ring" Classes.selected="{Binding Selected}">
+                      <Button Classes="swatch" Background="{Binding Colour, Converter={x:Static views:Converters.RgbToBrush}}"
+                              Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).SetLightbarCommand}"
+                              CommandParameter="{Binding Colour}" />
+                    </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>

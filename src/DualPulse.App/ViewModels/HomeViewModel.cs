@@ -50,6 +50,7 @@ public sealed partial class HomeViewModel : ObservableObject
 		{
 			OnPropertyChanged(nameof(SelectedTriggerPreset));
 			OnPropertyChanged(nameof(EmulationOn));
+			OnPropertyChanged(nameof(LightbarSwatches));
 		});
 		controller.SessionChanged += OnBackgroundChange;
 		controller.SessionStarted += session => session.InputReceived += OnInput;
@@ -61,15 +62,7 @@ public sealed partial class HomeViewModel : ObservableObject
 		Refresh();
 	}
 
-	public IReadOnlyList<Rgb> LightbarSwatches { get; } =
-	[
-		AppSettings.AccentLightbar,
-		new Rgb(0xFF, 0xFF, 0xFF),
-		new Rgb(0x3D, 0x7B, 0xFF),
-		new Rgb(0xFF, 0x3B, 0x3B),
-		new Rgb(0x3D, 0xDC, 0x84),
-		new Rgb(0x00, 0x00, 0x00)
-	];
+	public IReadOnlyList<SwatchChoice> LightbarSwatches => SwatchChoice.For(settings.Current.EffectiveLightbar);
 
 	public IReadOnlyList<TriggerPreset> TriggerPresets { get; } = [TriggerPreset.Off, TriggerPreset.Feedback, TriggerPreset.Weapon, TriggerPreset.Vibration];
 

@@ -46,15 +46,7 @@ public sealed partial class LightingViewModel : ObservableObject
 		settings.Changed += current => ui.Run(() => OnSettingsChanged(current));
 	}
 
-	public IReadOnlyList<Rgb> Swatches { get; } =
-	[
-		AppSettings.AccentLightbar,
-		new Rgb(0xFF, 0xFF, 0xFF),
-		new Rgb(0x3D, 0x7B, 0xFF),
-		new Rgb(0xFF, 0x3B, 0x3B),
-		new Rgb(0x3D, 0xDC, 0x84),
-		new Rgb(0x00, 0x00, 0x00)
-	];
+	public IReadOnlyList<SwatchChoice> Swatches => SwatchChoice.For(settings.Current.EffectiveLightbar);
 
 	public IReadOnlyList<ModeChoice> ModeChoices { get; } =
 	[
@@ -221,6 +213,7 @@ public sealed partial class LightingViewModel : ObservableObject
 	private void OnSettingsChanged(AppSettings current)
 	{
 		SyncColour(current.EffectiveLightbar);
+		OnPropertyChanged(nameof(Swatches));
 		OnPropertyChanged(nameof(SelectedMode));
 		OnPropertyChanged(nameof(Brightness));
 		OnPropertyChanged(nameof(SelectedPlayerLeds));

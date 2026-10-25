@@ -182,11 +182,26 @@ public sealed class HomeViewModelTests : IDisposable
 	}
 
 	[Fact]
+	public void Home_Swatches_MarkTheCurrentColour()
+	{
+		Assert.Equal([AppSettings.AccentLightbar], home.LightbarSwatches.Where(s => s.Selected).Select(s => s.Colour));
+
+		home.SetLightbarCommand.Execute(new Rgb(0xFF, 0x3B, 0x3B));
+		Assert.Equal([new Rgb(0xFF, 0x3B, 0x3B)], home.LightbarSwatches.Where(s => s.Selected).Select(s => s.Colour));
+
+		// A colour set elsewhere (hue sliders, hex) shows as an extra swatch.
+		settings.Update(s => s with { Lightbar = new Rgb(0x12, 0x34, 0x56) });
+		Assert.Equal(7, home.LightbarSwatches.Count);
+		Assert.Equal(new SwatchChoice(new Rgb(0x12, 0x34, 0x56), true), home.LightbarSwatches[^1]);
+		Assert.Single(home.LightbarSwatches, s => s.Selected);
+	}
+
+	[Fact]
 	public void Home_SetLightbar_UpdatesSettings()
 	{
 		Assert.Equal(
 			[new Rgb(0xC9, 0xA8, 0x6A), new Rgb(0xFF, 0xFF, 0xFF), new Rgb(0x3D, 0x7B, 0xFF), new Rgb(0xFF, 0x3B, 0x3B), new Rgb(0x3D, 0xDC, 0x84), new Rgb(0, 0, 0)],
-			home.LightbarSwatches);
+			home.LightbarSwatches.Select(s => s.Colour));
 
 		home.SetLightbarCommand.Execute(new Rgb(0x3D, 0x7B, 0xFF));
 
