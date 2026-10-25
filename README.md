@@ -35,4 +35,6 @@ After Bluetooth, the controller ignores game haptics over the cable until you tu
 
 Originally based on DualSenseX by Paliverse; rewritten from scratch. [Third-party notices](THIRD-PARTY-NOTICES.md).
 "DualSense" and "PS5" are trademarks of Sony Interactive Entertainment; DualPulse is not affiliated with Sony or
-Paliverse. [MIT license](LICENSE).
+Paliverse. [MIT license](LICENSE) · [Privacy policy](PRIVACY.md).
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
