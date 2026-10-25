@@ -11,7 +11,7 @@
     <Border Grid.Column="0" Classes="card">
       <Grid RowDefinitions="Auto,*">
         <TextBlock Classes="subtitle" Text="Controller" />
-        <controls:ControllerView Grid.Row="1" Margin="0,16,0,0" Snapshot="{Binding Snapshot}"
+        <controls:ControllerView Grid.Row="1" Margin="0,16,0,0" Snapshot="{Binding Snapshot}" Cabled="{Binding IsCabled}"
                                  Opacity="{Binding IsConnected, Converter={x:Static views:Converters.ConnectedOpacity}}">
           <controls:ControllerView.Transitions>
             <Transitions>

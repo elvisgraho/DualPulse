@@ -83,6 +83,28 @@ public sealed class HomeViewModelTests : IDisposable
 	}
 
 	[Fact]
+	public async Task Home_UsbSession_ShowsTheCable()
+	{
+		home.Refresh();
+		Assert.False(home.IsCabled);
+
+		await ConnectAsync(FakeHidTransport.UsbPath);
+		home.Refresh();
+
+		Assert.True(home.IsCabled);
+	}
+
+	[Fact]
+	public async Task Home_BluetoothSession_ShowsNoCable()
+	{
+		await ConnectAsync(FakeHidTransport.BluetoothPath);
+		home.Refresh();
+
+		Assert.True(home.IsConnected);
+		Assert.False(home.IsCabled);
+	}
+
+	[Fact]
 	public async Task Home_SampleInput_IgnoresSensorOnlyChanges()
 	{
 		FakeConnection connection = await ConnectAsync(FakeHidTransport.UsbPath);

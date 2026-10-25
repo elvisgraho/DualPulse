@@ -6,10 +6,12 @@ using DualPulse.Core.Protocol;
 namespace DualPulse.App.Controls;
 
 // A stylized, original top-down drawing of the controller that mirrors live input: pressed elements fill with the
-// accent, stick dots move, trigger bars fill and touch points show. Drawn in a 400 x 270 design space, scaled to fit.
+// accent, stick dots move, trigger bars fill and touch points show; on a cable, a USB-C plug sits in the top port. Drawn in a 400 x 270 design space, scaled to fit.
 public sealed class ControllerView : Control
 {
 	public static readonly StyledProperty<InputSnapshot?> SnapshotProperty = AvaloniaProperty.Register<ControllerView, InputSnapshot?>(nameof(Snapshot));
+
+	public static readonly StyledProperty<bool> CabledProperty = AvaloniaProperty.Register<ControllerView, bool>(nameof(Cabled));
 
 	private const double DesignWidth = 400;
 
@@ -20,6 +22,11 @@ public sealed class ControllerView : Control
 	private static readonly Geometry Body = Geometry.Parse(
 		"M 110,46 H 290 C 330,46 352,62 362,100 L 384,200 C 392,238 368,258 344,250 C 326,244 316,226 304,206 L 290,182 H 110 " +
 		"L 96,206 C 84,226 74,244 56,250 C 32,258 8,238 16,200 L 38,100 C 48,62 70,46 110,46 Z");
+
+	// The cable leaves the plug upwards with a slight bend (past the top of the design space; the control does not clip).
+	private static readonly Geometry Cable = Geometry.Parse("M 200,30 C 200,6 222,4 226,-40");
+
+	private static readonly Rect Plug = new(191, 29, 18, 17);
 
 	private static readonly Rect Touchpad = new(140, 52, 120, 62);
 
@@ -55,13 +62,19 @@ public sealed class ControllerView : Control
 
 	static ControllerView()
 	{
-		AffectsRender<ControllerView>(SnapshotProperty);
+		AffectsRender<ControllerView>(SnapshotProperty, CabledProperty);
 	}
 
 	public InputSnapshot? Snapshot
 	{
 		get => GetValue(SnapshotProperty);
 		set => SetValue(SnapshotProperty, value);
+	}
+
+	public bool Cabled
+	{
+		get => GetValue(CabledProperty);
+		set => SetValue(CabledProperty, value);
 	}
 
 	protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -89,6 +102,11 @@ public sealed class ControllerView : Control
 		InputSnapshot input = Snapshot ?? new InputSnapshot { LeftX = 128, LeftY = 128, RightX = 128, RightY = 128 };
 		Buttons buttons = input.Buttons;
 
+		if (Cabled)
+		{
+			context.DrawGeometry(null, new Pen(idle.Brush, 3, lineCap: PenLineCap.Round), Cable);
+			context.DrawRectangle(surface, idle, new RoundedRect(Plug, 4));
+		}
 		context.DrawGeometry(surface, outline, Body);
 
 		DrawTrigger(context, L2, input.L2);

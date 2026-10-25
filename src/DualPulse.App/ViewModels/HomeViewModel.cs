@@ -112,6 +112,10 @@ public sealed partial class HomeViewModel : ObservableObject
 	[ObservableProperty]
 	public partial bool IsConnected { get; private set; }
 
+	// Connected by USB: the controller picture shows the cable.
+	[ObservableProperty]
+	public partial bool IsCabled { get; private set; }
+
 	[ObservableProperty]
 	public partial string ConnectionText { get; private set; } = "Not connected";
 
@@ -159,6 +163,7 @@ public sealed partial class HomeViewModel : ObservableObject
 	{
 		ControllerSession? session = controller.Session;
 		IsConnected = session != null;
+		IsCabled = session?.Transport == Transport.Usb;
 		EmulationText = emulation.Status == EmulationStatus.DriverMissing ? "Driver missing" : settings.Current.Emulation switch
 		{
 			PadKind.Xbox360 => "Xbox 360",
