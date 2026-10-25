@@ -78,3 +78,21 @@ jobs:
         # A tag like v0.3.0-beta is a pre-release: not "latest", so the in-app update check doesn't offer it.
         $prerelease = if ("${{ github.ref_name }}".Contains('-')) { @('--prerelease') } else { @() }
         gh release create "${{ github.ref_name }}" (Get-Item artifacts/*.zip).FullName --title "DualPulse ${{ github.ref_name }}" --notes $notes --generate-notes @prerelease
+
+  # Sends the new version to winget (microsoft/winget-pkgs) as a pull request. Runs only with the WINGET_TOKEN secret
+  # (a classic token with public_repo and workflow scopes) and for normal releases; the first version has to be in
+  # winget already (see winget/README.md).
+  winget:
+    needs: release
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+    - name: Update winget
+      if: env.WINGET_TOKEN != ''
+      uses: vedantmgoyal9/winget-releaser@main
+      with:
+        identifier: elvisgraho.DualPulse
+        installers-regex: '-win-x64\.zip$'
+        token: ${{ secrets.WINGET_TOKEN }}
