@@ -620,10 +620,24 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		float[] hapticBuffer = [];
 		float[] speakerBuffer = [];
 		UsbAudioRoute? usbRoute = bound.Transport == Transport.Usb && usbAudio != null ? new UsbAudioRoute(usbAudio, time, logger) : null;
+		// What the user lets the game set (lights, adaptive triggers); the rest stays theirs.
+		byte[] Allowed(byte[] block) => GameOutput.Without(block, lights: !settings.Current.GameLights, triggers: !settings.Current.GameTriggers);
 		if (game.Carried is { } carried)
 		{
-			bound.Apply(output => output with { GameBlock = carried });
+			bound.Apply(output => output with { GameBlock = Allowed(carried) });
 		}
+		// Flipping a switch mid-game applies at once, not with the game's next change.
+		Action<AppSettings> reapply = _ =>
+		{
+			lock (state.Gate)
+			{
+				if (state.Active && game.Carried is { } current)
+				{
+					bound.Apply(output => output with { GameBlock = Allowed(current) });
+				}
+			}
+		};
+		settings.Changed += reapply;
 		if (game.Motors is { } motors)
 		{
 			rumble.SetGameRumble(motors.Large, motors.Small);
@@ -642,7 +656,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 				{
 					return;
 				}
-				bound.Apply(current => current with { GameBlock = send });
+				bound.Apply(current => current with { GameBlock = Allowed(send) });
 				if ((block[0] & 0x03) != 0 && game.Motors is { } rumbleNow)
 				{
 					rumble.SetGameRumble(rumbleNow.Large, rumbleNow.Small);
@@ -691,6 +705,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		return () =>
 		{
 			leased.Forward = null;
+			settings.Changed -= reapply;
 			pad.Haptics -= hapticAudio;
 			pad.Speaker -= speakerAudio;
 			bound.Apply(current => current with { GameBlock = null });

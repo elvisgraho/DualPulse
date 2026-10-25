@@ -122,7 +122,8 @@ public sealed record GyroSettings(
 // GameSoundOnController: a game driving the virtual DualSense also plays its controller-speaker sound on the real one.
 // CheckForUpdates: look up the latest release on GitHub (off until the user turns it on).
 // ButtonRemaps: buttons sent to games as other buttons (with a virtual controller). Sticks: stick deadzones (null =
-// unchanged). ChosenProfile: the named profile picked by hand (its Exe key), applied while no game profile is.
+// unchanged). GameLights / GameTriggers: in DualSense mode, whether a game may set the lights / adaptive triggers
+// (off keeps the user's own). ChosenProfile: the named profile picked by hand (its Exe key), applied while no game profile is.
 // SetupDone: the first-start window was closed. NotifiedUpdate: the release version last announced with a pop-up.
 public sealed record AppSettings(
 	int Version = 1,
@@ -148,7 +149,9 @@ public sealed record AppSettings(
 	string? NotifiedUpdate = null,
 	IReadOnlyList<ButtonRemap>? ButtonRemaps = null,
 	StickSettings? Sticks = null,
-	string? ChosenProfile = null)
+	string? ChosenProfile = null,
+	bool GameLights = true,
+	bool GameTriggers = true)
 {
 	public static readonly Rgb AccentLightbar = new(0xC9, 0xA8, 0x6A);
 

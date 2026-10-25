@@ -472,6 +472,41 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task GameLightsOff_KeepsYourLights_ButTheGamesTriggers()
+	{
+		settings.Update(s => s with { GameLights = false });
+		(_, FakeDualSensePad pad) = await ConnectDualSenseAsync();
+		byte[] block = new byte[47];
+		block[0] = 0x04;
+		block[11] = 0x26;
+		block[1] = 0x04;
+		block[44] = 0xFF;
+
+		pad.SendOutput(block);
+
+		byte[] sent = controller.Session!.Output.GameBlock!;
+		Assert.Equal(0, sent[1] & 0x04);
+		Assert.Equal(0x04, sent[0] & 0x04);
+	}
+
+	[Fact]
+	public async Task GameTriggersOff_KeepsYourTriggers_ButTheGamesLights()
+	{
+		settings.Update(s => s with { GameTriggers = false });
+		(_, FakeDualSensePad pad) = await ConnectDualSenseAsync();
+		byte[] block = new byte[47];
+		block[0] = 0x04;
+		block[1] = 0x04;
+		block[44] = 0xFF;
+
+		pad.SendOutput(block);
+
+		byte[] sent = controller.Session!.Output.GameBlock!;
+		Assert.Equal(0, sent[0] & 0x0C);
+		Assert.Equal(0x04, sent[1] & 0x04);
+	}
+
+	[Fact]
 	public async Task SwitchingConnection_CarriesTheGamesLastOutputOver()
 	{
 		// Games send output only when it changes; the new connection must not wait for the next change.

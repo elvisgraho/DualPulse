@@ -49,6 +49,8 @@ public sealed partial class EmulationViewModel : ObservableObject
 			OnPropertyChanged(nameof(ShowRemaps));
 			OnPropertyChanged(nameof(HideController));
 			OnPropertyChanged(nameof(GameSoundOnController));
+			OnPropertyChanged(nameof(GameLights));
+			OnPropertyChanged(nameof(GameTriggers));
 		});
 		foreach (ButtonRemap remap in settings.Current.ButtonRemaps ?? [])
 		{
@@ -132,6 +134,31 @@ public sealed partial class EmulationViewModel : ObservableObject
 			if (value != settings.Current.GameSoundOnController)
 			{
 				settings.Update(s => s with { GameSoundOnController = value });
+			}
+		}
+	}
+
+	// In DualSense mode: whether a game sets the lights / adaptive triggers (off keeps the user's own).
+	public bool GameLights
+	{
+		get => settings.Current.GameLights;
+		set
+		{
+			if (value != settings.Current.GameLights)
+			{
+				settings.Update(s => s with { GameLights = value });
+			}
+		}
+	}
+
+	public bool GameTriggers
+	{
+		get => settings.Current.GameTriggers;
+		set
+		{
+			if (value != settings.Current.GameTriggers)
+			{
+				settings.Update(s => s with { GameTriggers = value });
 			}
 		}
 	}

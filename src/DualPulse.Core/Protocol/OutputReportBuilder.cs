@@ -171,6 +171,29 @@ public static class OutputReportBuilder
 				common[Flag0] |= LeftTriggerEffect;
 				state.LeftTrigger.Bytes.CopyTo(common[LeftTriggerOffset..]);
 			}
+			// Lights the game never set are DualPulse's too.
+			if ((common[Flag1] & LightbarControl) == 0)
+			{
+				common[Flag1] |= LightbarControl;
+				common[Red] = state.Lightbar.R;
+				common[Red + 1] = state.Lightbar.G;
+				common[Red + 2] = state.Lightbar.B;
+			}
+			if ((common[Flag1] & PlayerLedControl) == 0)
+			{
+				common[Flag1] |= PlayerLedControl;
+				common[PlayerLedsOffset] = (byte)((state.PlayerLeds & 0x1F) | PlayerLedsInstant);
+			}
+			if ((common[Flag2] & LedBrightnessControl) == 0)
+			{
+				common[Flag2] |= LedBrightnessControl;
+				common[LedBrightnessOffset] = (byte)state.PlayerLedBrightness;
+			}
+			if ((common[Flag1] & MicLedControl) == 0)
+			{
+				common[Flag1] |= MicLedControl;
+				common[MicLedOffset] = (byte)state.MicLed;
+			}
 			return;
 		}
 		if (state.HapticsMode)

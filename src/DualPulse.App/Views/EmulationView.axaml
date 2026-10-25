@@ -40,6 +40,20 @@
             </StackPanel>
             <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding GameSoundOnController}" />
           </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Game sets the lights" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Off: your lightbar and player LEDs stay." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding GameLights}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Game sets the adaptive triggers" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Off: your trigger settings stay." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding GameTriggers}" />
+          </Grid>
           <Grid ColumnDefinitions="*,16,Auto">
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Status" />
             <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" />

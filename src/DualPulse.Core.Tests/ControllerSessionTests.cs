@@ -229,6 +229,7 @@ public sealed class ControllerSessionTests : IDisposable
 		ControllerSession s = StartSession(device);
 		byte[] game = new byte[OutputState.CommonBlockLength];
 		game[0] = 0x0C;
+		game[1] = 0x04;
 		game[10] = 0x26;
 		game[44] = 7;
 		s.Apply(state => state with { GameBlock = game });
@@ -272,7 +273,7 @@ public sealed class ControllerSessionTests : IDisposable
 		FakeDevice device = transport.Add(FakeHidTransport.UsbPath);
 		ControllerSession s = StartSession(device);
 		byte[] game = new byte[OutputState.CommonBlockLength];
-		game[1] = 0x42;
+		game[1] = 0x42 | 0x04;
 		game[9] = 0x1F;
 		game[36] = 0x55;
 		game[44] = 7;

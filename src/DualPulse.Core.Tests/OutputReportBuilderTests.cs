@@ -190,8 +190,9 @@ public class OutputReportBuilderTests
 		{
 			block[i] = (byte)(i + 1);
 		}
-		// Motors (0x01) and both trigger effects.
+		// Motors (0x01) and both trigger effects; power save (0x02), the mute LED, lightbar and player LEDs.
 		block[0] = 0x0D;
+		block[1] = 0x17;
 		return block;
 	}
 
@@ -227,6 +228,19 @@ public class OutputReportBuilderTests
 
 		byte[] untouched = Build(OutputState.Default with { GameBlock = block, LeftTrigger = weapon }, Transport.Usb, triggers: false);
 		Assert.Equal(0x04, untouched[1] & 0x0C);
+	}
+
+	[Fact]
+	public void GameBlock_LightsTheGameDidntSet_AreYours()
+	{
+		byte[] block = new byte[OutputState.CommonBlockLength];
+		block[0] = 0x0C;
+
+		byte[] r = Build(OutputState.Default with { GameBlock = block, Lightbar = new Rgb(9, 8, 7), PlayerLeds = 0x04 }, Transport.Usb);
+
+		Assert.Equal(0x04 | 0x10, r[1 + 1] & (0x04 | 0x10));
+		Assert.Equal([9, 8, 7], r[(1 + 44)..(1 + 47)]);
+		Assert.Equal(0x04, r[1 + 43] & 0x1F);
 	}
 
 	[Fact]
@@ -277,7 +291,8 @@ public class OutputReportBuilderTests
 		byte[] r = Build(OutputState.Default with { GameBlock = block, HapticsMode = true }, Transport.Bluetooth);
 
 		Assert.Equal(0x0C, r[3]);
-		Assert.Equal(0x00, r[3 + 38]);
+		// The rumble bit (0x04) is gone; the LED bits DualPulse fills in may be set.
+		Assert.Equal(0x00, r[3 + 38] & 0x04);
 		Assert.Equal(0x62, r[3 + 1] & 0x62);
 		Assert.Equal(0, r[3 + 9]);
 		Assert.Equal(0, r[3 + 36]);

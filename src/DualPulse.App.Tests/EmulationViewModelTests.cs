@@ -158,6 +158,22 @@ public sealed class EmulationViewModelTests
 	}
 
 	[Fact]
+	public void GameControlSwitches_ShowWithTheDualSense_AndAreSaved()
+	{
+		settings.Update(s => s with { Emulation = PadKind.Xbox360 });
+		EmulationViewModel viewModel = CreateViewModel();
+		Assert.False(viewModel.ShowDualSenseHint);
+		Assert.True(viewModel.GameLights);
+		Assert.True(viewModel.GameTriggers);
+
+		viewModel.GameLights = false;
+		viewModel.GameTriggers = false;
+
+		Assert.False(settings.Current.GameLights);
+		Assert.False(settings.Current.GameTriggers);
+	}
+
+	[Fact]
 	public void Remaps_AddChangeAndRemove_AreSaved()
 	{
 		EmulationViewModel viewModel = CreateViewModel();

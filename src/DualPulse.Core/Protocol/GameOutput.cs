@@ -5,7 +5,8 @@ namespace DualPulse.Core.Protocol;
 // in some of them, so:
 // - Accept returns the block to send now: the game's own flags, with every field it didn't flag filled in from the
 //   merged state (an unflagged audio route reads 0, "headset"; the speaker is the default), and the flag of every
-//   trigger the game has set (an unflagged one is DualPulse's). Null when it is the same as the last one sent.
+//   trigger and light the game has set (an unflagged one is DualPulse's). Null when it is the same as the last one sent.
+// - Without removes the lights or triggers from a block, for a user who keeps their own.
 // - Carried is the merged state with every flag the game has used (but the motor bits), for a new connection.
 // Thread-safe.
 public sealed class GameOutput
@@ -34,6 +35,29 @@ public sealed class GameOutput
 	private const int Flag2 = 38;
 
 	private const byte SpeakerRoute = 0x30;
+
+	// Both trigger effects (flag0).
+	private const byte TriggerFlags = 0x0C;
+
+	// Mute LED, lightbar colour and player LEDs (flag1); LED brightness and lightbar setup (flag 2).
+	private const byte LightFlags1 = 0x01 | 0x04 | 0x10;
+
+	private const byte LightFlags2 = 0x01 | 0x02;
+
+	public static byte[] Without(byte[] block, bool lights, bool triggers)
+	{
+		byte[] copy = [.. block];
+		if (triggers)
+		{
+			copy[0] &= unchecked((byte)~TriggerFlags);
+		}
+		if (lights && copy.Length > Flag2)
+		{
+			copy[1] &= unchecked((byte)~LightFlags1);
+			copy[Flag2] &= unchecked((byte)~LightFlags2);
+		}
+		return copy;
+	}
 
 	private readonly object gate = new();
 
@@ -111,7 +135,9 @@ public sealed class GameOutput
 			flags0 |= block[0];
 			flags1 |= block[1];
 			flags2 |= block[Flag2];
-			send[0] |= (byte)(flags0 & 0x0C);
+			send[0] |= (byte)(flags0 & TriggerFlags);
+			send[1] |= (byte)(flags1 & LightFlags1);
+			send[Flag2] |= (byte)(flags2 & LightFlags2);
 			if ((block[0] & 0x03) != 0)
 			{
 				motors = (block[3], block[2]);

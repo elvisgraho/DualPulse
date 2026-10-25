@@ -49,6 +49,38 @@ public sealed class GameOutputTests
 	}
 
 	[Fact]
+	public void Accept_KeepsFlaggingTheLightsTheGameSet()
+	{
+		GameOutput game = new();
+		byte[] lights = Block(flag1: 0x04 | 0x10);
+		lights[44] = 9;
+		lights[43] = 0x04;
+		game.Accept(lights);
+
+		byte[] sent = game.Accept(Block(flag0: 0x0C))!;
+
+		Assert.Equal(0x04 | 0x10, sent[1] & (0x04 | 0x10));
+		Assert.Equal(9, sent[44]);
+	}
+
+	[Fact]
+	public void Without_DropsTheLightsOrTriggersAGameMayNotSet()
+	{
+		byte[] block = Block(flag0: 0x0C | 0x20, flag1: 0x01 | 0x04 | 0x10 | 0x02, flag2: 0x01 | 0x02);
+
+		byte[] noLights = GameOutput.Without(block, lights: true, triggers: false);
+		byte[] noTriggers = GameOutput.Without(block, lights: false, triggers: true);
+
+		Assert.Equal(0x0C | 0x20, noLights[0]);
+		Assert.Equal(0x02, noLights[1]);
+		Assert.Equal(0, noLights[38]);
+		Assert.Equal(0x20, noTriggers[0]);
+		Assert.Equal(block[1], noTriggers[1]);
+		// The original block stays as it was.
+		Assert.Equal(0x0C | 0x20, block[0]);
+	}
+
+	[Fact]
 	public void Accept_DefaultsTheAudioRouteToTheSpeaker()
 	{
 		// Byte 7 matters to DualPulse itself: it picks the speaker or headset path for Bluetooth audio.
