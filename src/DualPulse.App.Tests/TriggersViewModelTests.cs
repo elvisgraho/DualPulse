@@ -47,8 +47,40 @@ public sealed class TriggersViewModelTests
 	{
 		TriggersViewModel viewModel = CreateViewModel();
 
-		Assert.Equal(["Off", "Resistance", "Weapon", "Vibration"], viewModel.Left.Kinds.Select(k => k.Label));
+		Assert.Equal(["Off", "Resistance", "Weapon", "Vibration", "Ramp", "Custom zones", "Custom vibration"], viewModel.Left.Kinds.Select(k => k.Label));
 		Assert.Equal(["Off", "Feedback", "Weapon", "Vibration"], viewModel.Presets.Select(p => p.ToString()));
+	}
+
+	[Theory]
+	[InlineData(TriggerKind.Resistance, true, false, false, false, false)]
+	[InlineData(TriggerKind.Weapon, true, true, false, false, false)]
+	[InlineData(TriggerKind.Vibration, true, false, false, true, false)]
+	[InlineData(TriggerKind.Ramp, true, true, true, false, false)]
+	[InlineData(TriggerKind.Zones, false, false, false, false, true)]
+	[InlineData(TriggerKind.ZoneVibration, false, false, false, true, true)]
+	public void Triggers_EachEffect_ShowsOnlyItsControls(TriggerKind kind, bool startAndStrength, bool end, bool endStrength, bool frequency, bool bars)
+	{
+		TriggersViewModel viewModel = CreateViewModel();
+
+		viewModel.Left.SelectedKind = Kind(viewModel.Left, kind);
+
+		Assert.Equal(startAndStrength, viewModel.Left.ShowStartAndStrength);
+		Assert.Equal(end, viewModel.Left.ShowEnd);
+		Assert.Equal(endStrength, viewModel.Left.ShowEndStrength);
+		Assert.Equal(frequency, viewModel.Left.ShowFrequency);
+		Assert.Equal(bars, viewModel.Left.ShowZoneBars);
+	}
+
+	[Fact]
+	public void Triggers_DrawnZones_AreSaved()
+	{
+		TriggersViewModel viewModel = CreateViewModel();
+		viewModel.Left.SelectedKind = Kind(viewModel.Left, TriggerKind.Zones);
+
+		viewModel.Left.Zones = [8, 8, 6, 4, 2, 0, 0, 0, 0, 0];
+
+		Assert.Equal([8, 8, 6, 4, 2, 0, 0, 0, 0, 0], settings.Current.EffectiveTriggers.Left.EffectiveZones);
+		Assert.Equal([8, 8, 6, 4, 2, 0, 0, 0, 0, 0], viewModel.Left.Zones);
 	}
 
 	[Fact]

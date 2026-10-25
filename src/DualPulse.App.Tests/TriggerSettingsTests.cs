@@ -19,6 +19,45 @@ public sealed class TriggerSettingsTests
 	}
 
 	[Fact]
+	public void Ramp_IsSonysSlopeFeedback()
+	{
+		TriggerEffectSettings ramp = new(TriggerKind.Ramp, Start: 2, End: 7, Strength: 1, EndStrength: 8);
+
+		Assert.True(Same(TriggerEffects.SlopeFeedback(2, 7, 1, 8), ramp.ToEffect()));
+		// The end always comes after the start.
+		Assert.True(Same(TriggerEffects.SlopeFeedback(8, 9, 1, 8), (ramp with { Start = 9, End = 3 }).ToEffect()));
+	}
+
+	[Fact]
+	public void CustomZones_AreMultiplePositionFeedback()
+	{
+		int[] zones = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12];
+
+		TriggerEffect effect = new TriggerEffectSettings(TriggerKind.Zones, Zones: zones).ToEffect();
+
+		Assert.True(Same(TriggerEffects.MultiplePositionFeedback([0, 1, 2, 3, 4, 5, 6, 7, 8, 8]), effect));
+	}
+
+	[Fact]
+	public void CustomVibration_IsMultiplePositionVibration()
+	{
+		int[] zones = [0, 0, 3, 5, 8, 8, 8, 5, 3, 0];
+
+		TriggerEffect effect = new TriggerEffectSettings(TriggerKind.ZoneVibration, Frequency: 40, Zones: zones).ToEffect();
+
+		Assert.True(Same(TriggerEffects.MultiplePositionVibration(40, [0, 0, 3, 5, 8, 8, 8, 5, 3, 0]), effect));
+	}
+
+	[Fact]
+	public void CustomZones_WithoutDrawnZones_UseAGentleRamp()
+	{
+		TriggerEffectSettings zones = new(TriggerKind.Zones);
+
+		Assert.Equal(10, zones.EffectiveZones.Count);
+		Assert.True(Same(TriggerEffects.MultiplePositionFeedback([.. zones.EffectiveZones.Select(z => (byte)z)]), zones.ToEffect()));
+	}
+
+	[Fact]
 	public void MatchPreset_IgnoresTheRange()
 	{
 		TriggerSettings weapon = TriggerSettings.FromPreset(TriggerPreset.Weapon);

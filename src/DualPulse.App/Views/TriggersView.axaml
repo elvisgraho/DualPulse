@@ -3,6 +3,7 @@
              xmlns:vm="using:DualPulse.App.ViewModels"
              xmlns:views="using:DualPulse.App.Views"
              xmlns:svc="using:DualPulse.App.Services"
+             xmlns:controls="using:DualPulse.App.Controls"
              x:Class="DualPulse.App.Views.TriggersView"
              x:DataType="vm:TriggersViewModel">
   <UserControl.DataTemplates>
@@ -21,28 +22,47 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
           </Grid>
-          <Grid ColumnDefinitions="Auto,16,*,16,48" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto" IsVisible="{Binding ShowZones}">
-            <TextBlock Grid.Row="0" VerticalAlignment="Center" Classes="secondary" Text="Starts at zone" />
+          <!-- Only the controls the chosen effect uses. -->
+          <Grid ColumnDefinitions="Auto,16,*,16,48" RowDefinitions="Auto,Auto,Auto,Auto,Auto" IsVisible="{Binding ShowSettings}">
+            <TextBlock Grid.Row="0" Margin="0,6" VerticalAlignment="Center" Classes="secondary" Text="Starts at zone" IsVisible="{Binding ShowStartAndStrength}" />
             <Slider Grid.Row="0" Grid.Column="2" Minimum="{Binding StartMinimum}" Maximum="{Binding StartMaximum}"
-                    TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Start}" />
-            <TextBlock Grid.Row="0" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Start}" />
+                    TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Start}" IsVisible="{Binding ShowStartAndStrength}" />
+            <TextBlock Grid.Row="0" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding Start}" IsVisible="{Binding ShowStartAndStrength}" />
 
-            <TextBlock Grid.Row="2" VerticalAlignment="Center" Classes="secondary" Text="Ends at zone" IsVisible="{Binding ShowEnd}" />
-            <Slider Grid.Row="2" Grid.Column="2" Minimum="{Binding EndMinimum}" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
+            <TextBlock Grid.Row="1" Margin="0,6" VerticalAlignment="Center" Classes="secondary" Text="Ends at zone" IsVisible="{Binding ShowEnd}" />
+            <Slider Grid.Row="1" Grid.Column="2" Minimum="{Binding EndMinimum}" Maximum="{Binding EndMaximum}" TickFrequency="1" IsSnapToTickEnabled="True"
                     Value="{Binding End}" IsVisible="{Binding ShowEnd}" />
-            <TextBlock Grid.Row="2" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+            <TextBlock Grid.Row="1" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
                        Text="{Binding End}" IsVisible="{Binding ShowEnd}" />
 
-            <TextBlock Grid.Row="4" VerticalAlignment="Center" Classes="secondary" Text="{Binding StrengthLabel}" />
-            <Slider Grid.Row="4" Grid.Column="2" Minimum="1" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Strength}" />
-            <TextBlock Grid.Row="4" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Strength}" />
+            <TextBlock Grid.Row="2" Margin="0,6" VerticalAlignment="Center" Classes="secondary" Text="{Binding StrengthLabel}" IsVisible="{Binding ShowStartAndStrength}" />
+            <Slider Grid.Row="2" Grid.Column="2" Minimum="1" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Strength}"
+                    IsVisible="{Binding ShowStartAndStrength}" />
+            <TextBlock Grid.Row="2" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding Strength}"
+                       IsVisible="{Binding ShowStartAndStrength}" />
 
-            <TextBlock Grid.Row="6" VerticalAlignment="Center" Classes="secondary" Text="Frequency" IsVisible="{Binding ShowFrequency}" />
-            <Slider Grid.Row="6" Grid.Column="2" Minimum="1" Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True"
+            <TextBlock Grid.Row="3" Margin="0,6" VerticalAlignment="Center" Classes="secondary" Text="End strength" IsVisible="{Binding ShowEndStrength}" />
+            <Slider Grid.Row="3" Grid.Column="2" Minimum="1" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding EndStrength}"
+                    IsVisible="{Binding ShowEndStrength}" />
+            <TextBlock Grid.Row="3" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right" Text="{Binding EndStrength}"
+                       IsVisible="{Binding ShowEndStrength}" />
+
+            <TextBlock Grid.Row="4" Margin="0,6" VerticalAlignment="Center" Classes="secondary" Text="Frequency" IsVisible="{Binding ShowFrequency}" />
+            <Slider Grid.Row="4" Grid.Column="2" Minimum="1" Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True"
                     Value="{Binding Frequency}" IsVisible="{Binding ShowFrequency}" />
-            <TextBlock Grid.Row="6" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+            <TextBlock Grid.Row="4" Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
                        Text="{Binding Frequency, StringFormat={}{0} Hz}" IsVisible="{Binding ShowFrequency}" />
           </Grid>
+          <StackPanel Spacing="6" IsVisible="{Binding ShowZoneBars}">
+            <TextBlock Classes="secondary" Text="{Binding ZoneBarsLabel}" />
+            <controls:ZoneBars Height="96" Values="{Binding Zones}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="caption" Text="Top of the pull" />
+              <TextBlock Grid.Column="1" Classes="caption" Text="Fully pressed" />
+            </Grid>
+            <TextBlock Classes="caption" Text="Click or drag to draw." />
+          </StackPanel>
           <!-- Range: shapes the analog value games see; works with any effect, including Off. -->
           <StackPanel Spacing="2">
             <TextBlock Text="Range games see" />

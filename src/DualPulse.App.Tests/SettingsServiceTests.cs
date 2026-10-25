@@ -90,6 +90,18 @@ public sealed class SettingsServiceTests : IDisposable
 	}
 
 	[Fact]
+	public void Settings_DrawnTriggerZones_RoundTrip()
+	{
+		TriggerEffectSettings zones = new(TriggerKind.Zones, Zones: [8, 6, 4, 2, 0, 0, 2, 4, 6, 8]);
+		new SettingsService(folder).Update(s => s with { Triggers = new TriggerSettings(Left: zones) });
+
+		TriggerEffectSettings loaded = new SettingsService(folder).Current.EffectiveTriggers.Left;
+
+		Assert.Equal(TriggerKind.Zones, loaded.Kind);
+		Assert.Equal([8, 6, 4, 2, 0, 0, 2, 4, 6, 8], loaded.EffectiveZones);
+	}
+
+	[Fact]
 	public void Settings_TriggersWithoutRange_LoadWithNoRange()
 	{
 		Directory.CreateDirectory(folder);

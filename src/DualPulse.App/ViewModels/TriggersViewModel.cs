@@ -156,7 +156,10 @@ public sealed class TriggerEditorViewModel : ObservableObject
 		new("Off", TriggerKind.Off),
 		new("Resistance", TriggerKind.Resistance),
 		new("Weapon", TriggerKind.Weapon),
-		new("Vibration", TriggerKind.Vibration)
+		new("Vibration", TriggerKind.Vibration),
+		new("Ramp", TriggerKind.Ramp),
+		new("Custom zones", TriggerKind.Zones),
+		new("Custom vibration", TriggerKind.ZoneVibration)
 	];
 
 	public string Title => isLeft ? (page.Linked ? "L2 and R2" : "L2") : "R2";
@@ -169,19 +172,53 @@ public sealed class TriggerEditorViewModel : ObservableObject
 		set => Write(Effect with { Kind = value.Kind });
 	}
 
-	public bool ShowZones => Effect.Kind != TriggerKind.Off;
+	// Each effect shows only the controls it uses.
+	public bool ShowSettings => Effect.Kind != TriggerKind.Off;
 
-	public bool ShowEnd => Effect.Kind == TriggerKind.Weapon;
+	public bool ShowStartAndStrength => Effect.Kind is TriggerKind.Resistance or TriggerKind.Weapon or TriggerKind.Vibration or TriggerKind.Ramp;
 
-	public bool ShowFrequency => Effect.Kind == TriggerKind.Vibration;
+	public bool ShowEnd => Effect.Kind is TriggerKind.Weapon or TriggerKind.Ramp;
 
-	public string StrengthLabel => Effect.Kind == TriggerKind.Vibration ? "Amplitude" : "Strength";
+	public bool ShowEndStrength => Effect.Kind == TriggerKind.Ramp;
+
+	public bool ShowFrequency => Effect.Kind is TriggerKind.Vibration or TriggerKind.ZoneVibration;
+
+	public bool ShowZoneBars => Effect.Kind is TriggerKind.Zones or TriggerKind.ZoneVibration;
+
+	public string StrengthLabel => Effect.Kind switch
+	{
+		TriggerKind.Vibration => "Amplitude",
+		TriggerKind.Ramp => "Start strength",
+		_ => "Strength"
+	};
+
+	public string ZoneBarsLabel => Effect.Kind == TriggerKind.ZoneVibration ? "Vibration along the pull" : "Resistance along the pull";
 
 	public int StartMinimum => Effect.Kind == TriggerKind.Weapon ? 2 : 0;
 
-	public int StartMaximum => Effect.Kind == TriggerKind.Weapon ? 7 : 9;
+	public int StartMaximum => Effect.Kind switch
+	{
+		TriggerKind.Weapon => 7,
+		TriggerKind.Ramp => 8,
+		_ => 9
+	};
 
 	public int EndMinimum => Effect.Start + 1;
+
+	public int EndMaximum => Effect.Kind == TriggerKind.Ramp ? 9 : 8;
+
+	public int EndStrength
+	{
+		get => Effect.EndStrength;
+		set => Write(Effect with { EndStrength = value });
+	}
+
+	// The 10 zone values (0-8) the bars show and draw.
+	public IReadOnlyList<int> Zones
+	{
+		get => Effect.EffectiveZones;
+		set => Write(Effect with { Zones = [.. value] });
+	}
 
 	public int Start
 	{
@@ -233,13 +270,15 @@ public sealed class TriggerEditorViewModel : ObservableObject
 	private static TriggerEffectSettings Normalize(TriggerEffectSettings effect)
 	{
 		bool weapon = effect.Kind == TriggerKind.Weapon;
-		int start = weapon ? Math.Clamp(effect.Start, 2, 7) : Math.Clamp(effect.Start, 0, 9);
+		bool ramp = effect.Kind == TriggerKind.Ramp;
+		int start = weapon ? Math.Clamp(effect.Start, 2, 7) : ramp ? Math.Clamp(effect.Start, 0, 8) : Math.Clamp(effect.Start, 0, 9);
 		return effect with
 		{
 			Start = start,
-			// Only Weapon has an end zone; it must come after the start.
-			End = weapon ? Math.Clamp(effect.End, start + 1, 8) : effect.End,
+			// Weapon and Ramp have an end zone; it must come after the start.
+			End = weapon ? Math.Clamp(effect.End, start + 1, 8) : ramp ? Math.Clamp(effect.End, start + 1, 9) : effect.End,
 			Strength = Math.Clamp(effect.Strength, 1, 8),
+			EndStrength = Math.Clamp(effect.EndStrength, 1, 8),
 			Frequency = Math.Clamp(effect.Frequency, 1, 255),
 			Deadzone = Math.Clamp(effect.Deadzone, 0, TriggerRange.Max),
 			StartAt = Math.Clamp(effect.StartAt, 0, TriggerRange.Max)
