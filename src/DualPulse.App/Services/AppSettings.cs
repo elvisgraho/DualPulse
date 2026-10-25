@@ -126,7 +126,7 @@ public sealed record GyroSettings(
 // SetupDone: the first-start window was closed. NotifiedUpdate: the release version last announced with a pop-up.
 public sealed record AppSettings(
 	int Version = 1,
-	PadKind? Emulation = PadKind.Xbox360,
+	PadKind? Emulation = null,
 	Rgb? Lightbar = null,
 	TriggerPreset TriggerPreset = TriggerPreset.Off,
 	PowerSettings? Power = null,

@@ -128,9 +128,13 @@ public sealed partial class GyroViewModel : ObservableObject
 		CanCalibrate = gyro.CalibrationState != GyroCalibrationState.Calibrating && controller.Session != null;
 	}
 
+	// Right stick output goes through the virtual controller, so in Native mode it does nothing; Mouse works anyway.
+	public bool ShowStickNote => Gyro.Output == GyroOutput.Stick && settings.Current.Emulation == null;
+
 	private void RefreshSettings()
 	{
 		Strip.Refresh();
+		OnPropertyChanged(nameof(ShowStickNote));
 		OnPropertyChanged(nameof(Enabled));
 		OnPropertyChanged(nameof(SelectedOutput));
 		OnPropertyChanged(nameof(SelectedActivation));

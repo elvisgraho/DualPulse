@@ -73,4 +73,15 @@ public sealed class GyroViewModelTests
 
 		Assert.Equal("Calibrated.", viewModel.CalibrationText);
 	}
+
+	[Theory]
+	[InlineData(GyroOutput.Stick, null, true)]
+	[InlineData(GyroOutput.Stick, DualPulse.Emulation.PadKind.Xbox360, false)]
+	[InlineData(GyroOutput.Mouse, null, false)]
+	public void RightStick_InNativeMode_SaysItNeedsAVirtualController(GyroOutput output, DualPulse.Emulation.PadKind? kind, bool note)
+	{
+		settings.Update(s => s with { Emulation = kind, Gyro = new GyroSettings(Output: output) });
+
+		Assert.Equal(note, CreateViewModel().ShowStickNote);
+	}
 }

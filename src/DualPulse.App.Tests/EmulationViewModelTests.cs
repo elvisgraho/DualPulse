@@ -12,7 +12,8 @@ namespace DualPulse.App.Tests;
 
 public sealed class EmulationViewModelTests
 {
-	private readonly FakeSettingsService settings = new();
+	// Starts in Xbox 360 mode, which these tests use (new installs start in Native).
+	private readonly FakeSettingsService settings = new(new AppSettings(Emulation: PadKind.Xbox360));
 
 	private readonly FakeEmulationService emulation = new();
 

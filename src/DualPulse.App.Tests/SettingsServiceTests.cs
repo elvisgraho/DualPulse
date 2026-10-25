@@ -25,7 +25,8 @@ public sealed class SettingsServiceTests : IDisposable
 		SettingsService service = new(folder);
 
 		Assert.Equal(1, service.Current.Version);
-		Assert.Equal(PadKind.Xbox360, service.Current.Emulation);
+		// A new install needs no driver: games see the DualSense as it is until a virtual controller is picked.
+		Assert.Null(service.Current.Emulation);
 		Assert.Null(service.Current.Lightbar);
 		Assert.Equal(TriggerPreset.Off, service.Current.TriggerPreset);
 		Assert.True(service.Current.EffectivePower.ShortcutEnabled);
@@ -163,7 +164,8 @@ public sealed class SettingsServiceTests : IDisposable
 
 		SettingsService service = new(folder);
 
-		Assert.Equal(PadKind.Xbox360, service.Current.Emulation);
+		// A new install needs no driver: games see the DualSense as it is until a virtual controller is picked.
+		Assert.Null(service.Current.Emulation);
 		Assert.Equal("{not json", File.ReadAllText(SettingsPath + ".bak"));
 	}
 
@@ -187,7 +189,8 @@ public sealed class SettingsServiceTests : IDisposable
 
 		SettingsService service = new(folder);
 
-		Assert.Equal(PadKind.Xbox360, service.Current.Emulation);
+		// A new install needs no driver: games see the DualSense as it is until a virtual controller is picked.
+		Assert.Null(service.Current.Emulation);
 	}
 
 	[Fact]

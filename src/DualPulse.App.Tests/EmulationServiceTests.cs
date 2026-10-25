@@ -33,7 +33,8 @@ public sealed class EmulationServiceTests : IDisposable
 	// Pad creation and disposal run inline, so tests see them at once (the app uses a worker thread).
 	private static void Inline(Action work) => work();
 
-	public EmulationServiceTests() : this(new AppSettings())
+	// Most tests need a virtual pad, so they start in Xbox 360 mode (new installs start in Native).
+	public EmulationServiceTests() : this(new AppSettings(Emulation: PadKind.Xbox360))
 	{
 	}
 

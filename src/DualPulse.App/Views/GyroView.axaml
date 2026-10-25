@@ -38,6 +38,8 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
           </Grid>
+          <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowStickNote}"
+                     Text="Right stick needs a virtual controller. Pick one on the Emulation page, or use Mouse." />
           <Grid ColumnDefinitions="*,16,Auto" IsEnabled="{Binding Enabled}">
             <StackPanel Spacing="2">
               <TextBlock Text="Active" />

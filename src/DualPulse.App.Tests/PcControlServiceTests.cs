@@ -15,7 +15,8 @@ public sealed class PcControlServiceTests : IDisposable
 
 	private readonly FakeTimeProvider time = new(new DateTimeOffset(2026, 10, 23, 12, 0, 0, TimeSpan.Zero));
 
-	private readonly FakeSettingsService settings = new();
+	// Starts in Xbox 360 mode, which these tests use (new installs start in Native).
+	private readonly FakeSettingsService settings = new(new AppSettings(Emulation: DualPulse.Emulation.PadKind.Xbox360));
 
 	private readonly FakePcOutput output = new();
 
