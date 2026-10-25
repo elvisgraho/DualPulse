@@ -11,3 +11,6 @@ obj/
 .DS_Store
 Thumbs.db
 
+
+# Local shortcut to the built app
+*.lnk
