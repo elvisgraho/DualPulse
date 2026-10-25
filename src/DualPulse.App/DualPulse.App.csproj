@@ -5,7 +5,7 @@
     <RootNamespace>DualPulse.App</RootNamespace>
     <AssemblyName>DualPulse</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
