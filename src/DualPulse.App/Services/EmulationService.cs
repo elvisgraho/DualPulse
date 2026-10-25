@@ -119,6 +119,9 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 
 	private volatile IReadOnlyList<ButtonRemap> remaps = [];
 
+	// Null while neither stick is reshaped.
+	private volatile StickSettings? sticks;
+
 	// padWorker: runs pad creation and disposal (tests pass an inline runner); by default a dedicated thread.
 	public EmulationService(IControllerService controller, IVirtualPadBackend backend, ISettingsService settings, IRumbleService rumble, ILogger<EmulationService> logger,
 		IPcControlService? pcControl = null, IGyroService? gyro = null, IProfileService? profiles = null, TimeProvider? time = null,
@@ -158,6 +161,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		}
 		ranges = TriggerRanges.From(profiles?.Effective ?? settings.Current);
 		remaps = settings.Current.ButtonRemaps ?? [];
+		sticks = Reshaping(profiles?.Effective ?? settings.Current);
 		if (controller.Session is { } current)
 		{
 			OnSessionStarted(current);
@@ -237,10 +241,17 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 
 	private void OnProfilesChanged() => OnSettingsChanged(profiles!.Effective);
 
+	private static StickSettings? Reshaping(AppSettings current)
+	{
+		StickSettings shape = current.EffectiveSticks;
+		return shape.Left.ChangesNothing && shape.EffectiveRight.ChangesNothing ? null : shape;
+	}
+
 	private void OnSettingsChanged(AppSettings current)
 	{
 		ranges = TriggerRanges.From(current);
 		remaps = current.ButtonRemaps ?? [];
+		sticks = Reshaping(current);
 		Update(() =>
 		{
 			if (kind != current.Emulation)
@@ -523,9 +534,20 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			{
 				snapshot = Neutral;
 			}
-			else if (gyro != null)
+			else
 			{
-				snapshot = gyro.ApplyToPad(snapshot);
+				// The sticks are reshaped before gyro aiming adds to the right stick, so small gyro movements survive.
+				if (sticks is { } shape)
+				{
+					(byte lx, byte ly) = StickShape.Apply(snapshot.LeftX, snapshot.LeftY, shape.Left.Deadzone, shape.Left.FullTiltAt);
+					StickRange right = shape.EffectiveRight;
+					(byte rx, byte ry) = StickShape.Apply(snapshot.RightX, snapshot.RightY, right.Deadzone, right.FullTiltAt);
+					snapshot = snapshot with { LeftX = lx, LeftY = ly, RightX = rx, RightY = ry };
+				}
+				if (gyro != null)
+				{
+					snapshot = gyro.ApplyToPad(snapshot);
+				}
 			}
 			TriggerRanges range = ranges;
 			if (range != TriggerRanges.None)

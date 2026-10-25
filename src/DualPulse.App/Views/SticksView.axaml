@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             xmlns:views="using:DualPulse.App.Views"
+             xmlns:controls="using:DualPulse.App.Controls"
+             x:Class="DualPulse.App.Views.SticksView"
+             x:DataType="vm:SticksViewModel">
+  <UserControl.DataTemplates>
+    <!-- One stick's (or both sticks') deadzone and full-tilt point, with a live preview. -->
+    <DataTemplate DataType="vm:StickEditorViewModel">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="{Binding Title}" />
+          <Grid ColumnDefinitions="140,24,*">
+            <controls:StickPreview Width="140" Height="140" VerticalAlignment="Center" Raw="{Binding RawPosition}" Game="{Binding GamePosition}"
+                                   Deadzone="{Binding Deadzone}" FullTiltAt="{Binding FullTiltAt}" />
+            <StackPanel Grid.Column="2" Spacing="12" VerticalAlignment="Center">
+              <StackPanel Spacing="2">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="Deadzone" />
+                  <TextBlock Grid.Column="1" Classes="secondary" Text="{Binding Deadzone, StringFormat={}{0}%}" />
+                </Grid>
+                <Slider Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Deadzone}" />
+                <TextBlock Classes="caption" Text="Ignores small drift around the centre." />
+              </StackPanel>
+              <StackPanel Spacing="2">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="Full tilt at" />
+                  <TextBlock Grid.Column="1" Classes="secondary" Text="{Binding FullTiltAt, StringFormat={}{0}%}" />
+                </Grid>
+                <Slider Minimum="70" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding FullTiltAt}" />
+                <TextBlock Classes="caption" Text="Reaches full speed before the stick hits the edge." />
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <views:ProfileStripView DataContext="{Binding Strip}" />
+      <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowNativeNote}"
+                 Text="These apply to games through a virtual controller. Pick one on the Emulation page." />
+
+      <StackPanel Classes="profileContent" Spacing="16" IsEnabled="{Binding Strip.CanEdit}">
+        <ContentControl Content="{Binding Left}" />
+        <ContentControl Content="{Binding Right}" IsVisible="{Binding !Linked}" />
+        <Border Classes="card">
+          <Grid ColumnDefinitions="*,16,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Same for both sticks" />
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding Linked}" />
+          </Grid>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

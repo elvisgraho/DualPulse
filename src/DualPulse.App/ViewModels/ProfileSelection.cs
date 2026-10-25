@@ -7,7 +7,8 @@ namespace DualPulse.App.ViewModels;
 public enum ProfilePart
 {
 	Triggers,
-	Gyro
+	Gyro,
+	Sticks
 }
 
 // Which profile the Controller page is editing (null = Default). It jumps to a game's profile when that game becomes
@@ -62,18 +63,33 @@ public sealed class ProfileSelection
 		Changed?.Invoke();
 	}
 
-	public bool UsesOwn(ProfilePart part) => Selected is { } profile && (part == ProfilePart.Triggers ? profile.Triggers != null : profile.Gyro != null);
+	public bool UsesOwn(ProfilePart part) => Selected is { } profile && part switch
+	{
+		ProfilePart.Triggers => profile.Triggers != null,
+		ProfilePart.Gyro => profile.Gyro != null,
+		_ => profile.Sticks != null
+	};
 
 	// Starts the selected profile's part from the current default.
 	public void Customize(ProfilePart part)
 	{
 		AppSettings saved = settings.Current;
-		Update(p => part == ProfilePart.Triggers ? p with { Triggers = saved.EffectiveTriggers } : p with { Gyro = saved.EffectiveGyro });
+		Update(p => part switch
+		{
+			ProfilePart.Triggers => p with { Triggers = saved.EffectiveTriggers },
+			ProfilePart.Gyro => p with { Gyro = saved.EffectiveGyro },
+			_ => p with { Sticks = saved.EffectiveSticks }
+		});
 	}
 
 	public void UseDefault(ProfilePart part)
 	{
-		Update(p => part == ProfilePart.Triggers ? p with { Triggers = null } : p with { Gyro = null });
+		Update(p => part switch
+		{
+			ProfilePart.Triggers => p with { Triggers = null },
+			ProfilePart.Gyro => p with { Gyro = null },
+			_ => p with { Sticks = null }
+		});
 	}
 
 	// Replaces the selected profile in the saved list; does nothing on Default.

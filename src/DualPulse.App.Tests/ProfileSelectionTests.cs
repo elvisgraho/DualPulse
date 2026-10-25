@@ -65,6 +65,20 @@ public sealed class ProfileSelectionTests : IDisposable
 	}
 
 	[Fact]
+	public void SticksVm_EditsTheProfile_WhenItHasItsOwnSticks()
+	{
+		SticksViewModel viewModel = new(settings, controller, selection);
+		selection.Select(Game);
+		viewModel.Strip.CustomizeCommand.Execute(null);
+
+		viewModel.Left.Deadzone = 12;
+
+		Assert.Equal(0.12, Saved.Sticks!.Left.Deadzone, 3);
+		Assert.Equal(0, settings.Current.EffectiveSticks.Left.Deadzone);
+		Assert.Equal("Game uses its own sticks.", viewModel.Strip.Text);
+	}
+
+	[Fact]
 	public void TriggersVm_EditsTheProfile_WhenItHasItsOwnTriggers()
 	{
 		TriggersViewModel viewModel = new(settings, controller, selection);

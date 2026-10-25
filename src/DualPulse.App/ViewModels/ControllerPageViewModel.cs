@@ -10,6 +10,7 @@ public enum ControllerSection
 {
 	Lighting,
 	Triggers,
+	Sticks,
 	Rumble,
 	Gyro,
 	Audio
@@ -18,9 +19,9 @@ public enum ControllerSection
 // One selector entry; Exe is null for Default. Only name and exe, so editing a profile doesn't replace its entry.
 public sealed record ProfileChoice(string Label, string? Exe);
 
-// The Controller page: Lighting, Triggers, Rumble and Gyro, chosen with chips at the top. They only change what the
+// The Controller page: Lighting, Triggers, Sticks, Rumble, Gyro and Audio, chosen with chips at the top. They only change what the
 // controller itself does (lights, trigger feel, motors, motion aiming), so they share one rail entry. The profile
-// selector picks what Triggers and Gyro edit: Default, or a game's profile (added by picking a running program).
+// selector picks what Triggers, Sticks and Gyro edit: Default, or a game's profile (added by picking a running program).
 public sealed partial class ControllerPageViewModel : ObservableObject
 {
 	private readonly ProfileSelection? selection;
@@ -33,8 +34,9 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	public ControllerPageViewModel(LightingViewModel? lighting = null, TriggersViewModel? triggers = null, RumbleViewModel? rumble = null,
 		GyroViewModel? gyro = null, ProfileSelection? selection = null, ISettingsService? settings = null, IRunningWindows? windows = null,
-		AudioViewModel? audio = null)
+		AudioViewModel? audio = null, SticksViewModel? sticks = null)
 	{
+		Sticks = sticks;
 		Audio = audio;
 		Lighting = lighting;
 		Triggers = triggers;
@@ -56,17 +58,21 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	public RumbleViewModel? Rumble { get; }
 
+	public SticksViewModel? Sticks { get; }
+
 	public GyroViewModel? Gyro { get; }
 
 	public AudioViewModel? Audio { get; }
 
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(IsLighting), nameof(IsTriggers), nameof(IsRumble), nameof(IsGyro), nameof(IsAudio), nameof(ShowSameForAllGames))]
+	[NotifyPropertyChangedFor(nameof(IsLighting), nameof(IsTriggers), nameof(IsSticks), nameof(IsRumble), nameof(IsGyro), nameof(IsAudio), nameof(ShowSameForAllGames))]
 	public partial ControllerSection CurrentSection { get; set; } = ControllerSection.Lighting;
 
 	public bool IsLighting => CurrentSection == ControllerSection.Lighting;
 
 	public bool IsTriggers => CurrentSection == ControllerSection.Triggers;
+
+	public bool IsSticks => CurrentSection == ControllerSection.Sticks;
 
 	public bool IsRumble => CurrentSection == ControllerSection.Rumble;
 

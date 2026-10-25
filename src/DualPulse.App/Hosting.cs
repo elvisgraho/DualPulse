@@ -109,6 +109,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<TriggersViewModel>();
 		builder.Services.AddSingleton<RumbleViewModel>();
 		builder.Services.AddSingleton<GyroViewModel>();
+		builder.Services.AddSingleton<SticksViewModel>();
 		builder.Services.AddSingleton<AudioViewModel>();
 		builder.Services.AddSingleton<ModsViewModel>();
 		builder.Services.AddSingleton<ControllerPageViewModel>();

@@ -55,7 +55,7 @@ public sealed class ProfileService : IProfileService, IHostedService, IDisposabl
 		GyroSettings savedGyro = saved.EffectiveGyro;
 		// Calibration belongs to the controller, not the game.
 		GyroSettings? gyro = profile.Gyro is { } own ? own with { OffsetX = savedGyro.OffsetX, OffsetY = savedGyro.OffsetY, OffsetZ = savedGyro.OffsetZ } : saved.Gyro;
-		return saved with { Triggers = profile.Triggers ?? saved.Triggers, Gyro = gyro };
+		return saved with { Triggers = profile.Triggers ?? saved.Triggers, Gyro = gyro, Sticks = profile.Sticks ?? saved.Sticks };
 	}
 
 	public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;

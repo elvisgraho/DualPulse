@@ -45,6 +45,16 @@ public sealed class ProfileServiceTests : IDisposable
 	}
 
 	[Fact]
+	public void Merge_ProfileSticks_Win()
+	{
+		StickSettings sticks = new(Left: new StickRange(Deadzone: 0.2));
+
+		AppSettings merged = ProfileService.Merge(new AppSettings(), new GameProfile("Game", "game.exe", Sticks: sticks));
+
+		Assert.Equal(0.2, merged.EffectiveSticks.Left.Deadzone);
+	}
+
+	[Fact]
 	public void Merge_KeepsSavedGyroOffsets()
 	{
 		AppSettings saved = new(Gyro: new GyroSettings(OffsetX: 5, OffsetY: -7, OffsetZ: 2));

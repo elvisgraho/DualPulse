@@ -15,6 +15,8 @@
                   Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Lighting}" />
           <Button Classes="chip" Classes.selected="{Binding IsTriggers}" Content="Triggers"
                   Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Triggers}" />
+          <Button Classes="chip" Classes.selected="{Binding IsSticks}" Content="Sticks"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Sticks}" />
           <Button Classes="chip" Classes.selected="{Binding IsRumble}" Content="Rumble"
                   Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Rumble}" />
           <Button Classes="chip" Classes.selected="{Binding IsGyro}" Content="Gyro"
@@ -69,6 +71,7 @@
     <Panel Grid.Row="4">
       <views:LightingView DataContext="{Binding Lighting}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsLighting}" />
       <views:TriggersView DataContext="{Binding Triggers}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsTriggers}" />
+      <views:SticksView DataContext="{Binding Sticks}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsSticks}" />
       <views:RumbleView DataContext="{Binding Rumble}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsRumble}" />
       <views:GyroView DataContext="{Binding Gyro}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsGyro}" />
       <views:AudioView DataContext="{Binding Audio}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsAudio}" />

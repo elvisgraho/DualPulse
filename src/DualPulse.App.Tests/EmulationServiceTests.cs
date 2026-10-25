@@ -241,6 +241,25 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task Emulation_StickDeadzone_CentresSmallPushes()
+	{
+		settings.Update(s => s with { Sticks = new StickSettings(Left: new StickRange(Deadzone: 0.2)) });
+		FakeDevice device = transport.Add(FakeHidTransport.UsbPath);
+		await controller.StartAsync(TestContext.Current.CancellationToken);
+		FakePad pad = backend.Created[^1];
+		byte[] drift = TestReports.Fixture("idle-usb");
+		drift[1] = 150;
+		drift[3] = 150;
+
+		device.Latest.Feed(drift);
+
+		// Linked: both sticks centre a small push.
+		TestReports.WaitUntil(() => pad.Submitted > 0);
+		Assert.Equal(128, pad.LastSubmitted!.Value.LeftX);
+		Assert.Equal(128, pad.LastSubmitted!.Value.RightX);
+	}
+
+	[Fact]
 	public async Task Emulation_TriggerRange_ShapesL2()
 	{
 		settings.Update(s => s with { Triggers = new TriggerSettings(Linked: true, Left: new TriggerEffectSettings(Deadzone: 0.2)) });
