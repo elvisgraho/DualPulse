@@ -35,7 +35,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 		this.copy = copy;
 		this.settings = settings;
 		this.logsFolder = logsFolder;
-		this.open = open ?? OpenWithShell;
+		this.open = open ?? Platform.Shell.Open;
 		this.updates = updates;
 		if (updates != null)
 		{
@@ -206,10 +206,6 @@ public sealed partial class SettingsViewModel : ObservableObject
 		}
 	}
 
-	private static void OpenWithShell(string path)
-	{
-		Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
-	}
 
 	private void UpdatePower(Func<PowerSettings, PowerSettings> change, [System.Runtime.CompilerServices.CallerMemberName] string? property = null)
 	{

@@ -2,26 +2,35 @@ using Microsoft.Extensions.Logging;
 
 namespace DualPulse.App.Logging;
 
-// Writes logs/dualpulse-yyyyMMdd.log in the data folder and removes log files older than 7 days.
+// Writes logs/dualpulse-yyyyMMdd.log in the data folder, kept small: a day's file that reaches maxBytes becomes
+// dualpulse-yyyyMMdd-old.log (replacing an older one) and a fresh file starts, and at start files older than 7 days,
+// and all but the newest MaxFiles, are removed.
 public sealed class FileLoggerProvider : ILoggerProvider
 {
+	public const int MaxFiles = 10;
+
 	private static readonly TimeSpan Retention = TimeSpan.FromDays(7);
 
 	private readonly object gate = new();
 
 	private readonly string folder;
 
-	public FileLoggerProvider(string folder)
+	private readonly long maxBytes;
+
+	public FileLoggerProvider(string folder, long maxBytes = 2 * 1024 * 1024)
 	{
 		this.folder = folder;
+		this.maxBytes = maxBytes;
 		Directory.CreateDirectory(folder);
-		foreach (string file in Directory.GetFiles(folder, "dualpulse-*.log"))
+		IEnumerable<FileInfo> newestFirst = new DirectoryInfo(folder).GetFiles("dualpulse-*.log").OrderByDescending(file => file.LastWriteTime);
+		int kept = 0;
+		foreach (FileInfo file in newestFirst)
 		{
 			try
 			{
-				if (DateTime.Now - File.GetLastWriteTime(file) > Retention)
+				if (++kept > MaxFiles || DateTime.Now - file.LastWriteTime > Retention)
 				{
-					File.Delete(file);
+					file.Delete();
 				}
 			}
 			catch (Exception error) when (error is IOException or UnauthorizedAccessException)
@@ -47,7 +56,14 @@ public sealed class FileLoggerProvider : ILoggerProvider
 		{
 			try
 			{
-				File.AppendAllText(Path.Combine(folder, $"dualpulse-{DateTime.Now:yyyyMMdd}.log"), line);
+				string day = $"dualpulse-{DateTime.Now:yyyyMMdd}";
+				string current = Path.Combine(folder, day + ".log");
+				FileInfo info = new(current);
+				if (info.Exists && info.Length + line.Length > maxBytes)
+				{
+					File.Move(current, Path.Combine(folder, day + "-old.log"), overwrite: true);
+				}
+				File.AppendAllText(current, line);
 			}
 			catch (Exception error) when (error is IOException or UnauthorizedAccessException)
 			{

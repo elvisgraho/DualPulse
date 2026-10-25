@@ -58,7 +58,7 @@ public sealed partial class FirstStartViewModel : ObservableObject
 		this.settings = settings;
 		this.backend = backend;
 		this.hidHide = hidHide;
-		this.open = open ?? (target => Process.Start(new ProcessStartInfo(target) { UseShellExecute = true })?.Dispose());
+		this.open = open ?? Platform.Shell.Open;
 		Choices =
 		[
 			new("Xbox controller", "Works in every game.", PadKind.Xbox360, "ViGEmBus", DriverPages.ViGEmBus),

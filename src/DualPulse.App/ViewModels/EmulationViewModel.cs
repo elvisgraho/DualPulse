@@ -38,7 +38,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 		this.backend = backend;
 		this.hidHide = hidHide;
 		this.driverVersion = driverVersion;
-		this.open = open ?? OpenWithShell;
+		this.open = open ?? Platform.Shell.Open;
 		settings.Changed += _ => ui.Run(() =>
 		{
 			OnPropertyChanged(nameof(SelectedEmulation));
@@ -190,8 +190,4 @@ public sealed partial class EmulationViewModel : ObservableObject
 		}
 	}
 
-	private static void OpenWithShell(string target)
-	{
-		Process.Start(new ProcessStartInfo(target) { UseShellExecute = true })?.Dispose();
-	}
 }
