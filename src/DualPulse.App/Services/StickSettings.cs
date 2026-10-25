@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace DualPulse.App.Services;
 
 // How games see one stick (with a virtual controller): Deadzone (0-0.3 of the throw) reads as centred, and the stick
@@ -8,6 +10,7 @@ public sealed record StickRange(double Deadzone = 0, double FullTiltAt = 1)
 
 	public const double MinFullTiltAt = 0.7;
 
+	[JsonIgnore]
 	public bool ChangesNothing => Deadzone <= 0 && FullTiltAt >= 1;
 }
 
@@ -18,5 +21,6 @@ public sealed record StickSettings(bool Linked = true, StickRange? Left = null, 
 
 	public StickRange Right { get; init; } = Right ?? new StickRange();
 
+	[JsonIgnore]
 	public StickRange EffectiveRight => Linked ? Left : Right;
 }

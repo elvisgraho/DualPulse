@@ -102,6 +102,21 @@ public sealed class SettingsServiceTests : IDisposable
 	}
 
 	[Fact]
+	public void Settings_File_HoldsOnlyRealSettings()
+	{
+		new SettingsService(folder).Update(s => s with
+		{
+			Triggers = new TriggerSettings(Left: new TriggerEffectSettings(TriggerKind.Zones)),
+			Sticks = new StickSettings(Left: new StickRange(0.1))
+		});
+
+		string json = File.ReadAllText(SettingsPath);
+
+		Assert.DoesNotContain("Effective", json);
+		Assert.DoesNotContain("ChangesNothing", json);
+	}
+
+	[Fact]
 	public void Settings_TriggersWithoutRange_LoadWithNoRange()
 	{
 		Directory.CreateDirectory(folder);

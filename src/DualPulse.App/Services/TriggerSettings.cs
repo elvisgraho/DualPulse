@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using DualPulse.Core.Protocol;
 
 namespace DualPulse.App.Services;
@@ -27,6 +28,7 @@ public sealed record TriggerEffectSettings(TriggerKind Kind = TriggerKind.Off, i
 	private static readonly int[] DefaultZones = [0, 0, 1, 2, 3, 4, 6, 8, 8, 8];
 
 	// Always 10 values, each 0-8.
+	[JsonIgnore]
 	public IReadOnlyList<int> EffectiveZones => [.. Enumerable.Range(0, 10).Select(zone =>
 		Math.Clamp(Zones is { } zones && zone < zones.Count ? zones[zone] : DefaultZones[zone], 0, 8))];
 
@@ -62,6 +64,7 @@ public sealed record TriggerSettings(bool Linked = true, TriggerEffectSettings? 
 
 	public TriggerEffectSettings Right { get; init; } = Right ?? new TriggerEffectSettings();
 
+	[JsonIgnore]
 	public TriggerEffectSettings EffectiveRight => Linked ? Left : Right;
 
 	public static TriggerSettings FromPreset(TriggerPreset preset)
