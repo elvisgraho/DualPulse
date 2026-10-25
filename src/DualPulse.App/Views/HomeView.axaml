@@ -63,6 +63,16 @@
         <Border Classes="card">
           <StackPanel Spacing="16">
             <TextBlock Classes="caption" Text="QUICK ACTIONS" />
+            <StackPanel Spacing="8" IsVisible="{Binding ShowProfilePicker}">
+              <TextBlock Classes="secondary" Text="Profile" />
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding NamedProfiles}" SelectedItem="{Binding ChosenProfile}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProfileChoice">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
             <StackPanel Spacing="8">
               <TextBlock Classes="secondary" Text="Lightbar" />
               <ItemsControl ItemsSource="{Binding LightbarSwatches}">

@@ -182,6 +182,23 @@ public sealed class HomeViewModelTests : IDisposable
 	}
 
 	[Fact]
+	public void Home_ProfilePicker_ShowsOnceThereAreNamedProfiles_AndPicksOne()
+	{
+		Assert.False(home.ShowProfilePicker);
+
+		GameProfile racing = GameProfile.Named("Racing", []);
+		settings.Update(s => s with { Profiles = [new GameProfile("Forza", "forza.exe"), racing] });
+
+		Assert.True(home.ShowProfilePicker);
+		Assert.Equal(["Default", "Racing"], home.NamedProfiles.Select(p => p.Label));
+		Assert.Equal("Default", home.ChosenProfile!.Label);
+
+		home.ChosenProfile = home.NamedProfiles[1];
+
+		Assert.Equal(racing.Exe, settings.Current.ChosenProfile);
+	}
+
+	[Fact]
 	public void Home_Swatches_MarkTheCurrentColour()
 	{
 		Assert.Equal([AppSettings.AccentLightbar], home.LightbarSwatches.Where(s => s.Selected).Select(s => s.Colour));

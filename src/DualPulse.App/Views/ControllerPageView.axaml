@@ -36,10 +36,24 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <Button Content="Add game..." Command="{Binding StartAddGameCommand}" ToolTip.Tip="Make a profile for a game that is running now" />
+          <Button Content="New profile..." Command="{Binding StartNewProfileCommand}" ToolTip.Tip="A profile you switch to by hand, on Home or in the tray" />
           <Button Content="Remove" Command="{Binding RemoveProfileCommand}" IsVisible="{Binding CanRemove}" />
           <TextBlock Classes="caption" VerticalAlignment="Center" Margin="8,0,0,0" Text="● Active now" IsVisible="{Binding IsActiveNow}" />
       </StackPanel>
     </StackPanel>
+
+    <!-- Naming a new profile that isn't tied to a game -->
+    <Border Grid.Row="1" Classes="card" Margin="0,16,16,0" MaxWidth="720" HorizontalAlignment="Left" IsVisible="{Binding IsNamingProfile}">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="caption" Text="NEW PROFILE" />
+        <TextBlock Classes="secondary" TextWrapping="Wrap" Text="Switch to it on Home or in the tray. A game with its own profile still uses that one." />
+        <TextBox Text="{Binding NewProfileName}" PlaceholderText="Name, e.g. Racing" MaxLength="40" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Create" Command="{Binding CreateProfileCommand}" IsDefault="True" />
+          <Button Content="Cancel" Command="{Binding CancelNewProfileCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
 
     <!-- Picking a running program for a new game profile -->
     <Border Grid.Row="1" Classes="card" Margin="0,16,16,0" MaxWidth="720" HorizontalAlignment="Left" IsVisible="{Binding IsAddingGame}">
@@ -66,7 +80,7 @@
       </StackPanel>
     </Border>
 
-    <TextBlock Grid.Row="2" Classes="caption" Margin="0,16,0,0" Text="Same for all games." IsVisible="{Binding ShowSameForAllGames}" />
+    <TextBlock Grid.Row="2" Classes="caption" Margin="0,16,0,0" Text="The same in every profile." IsVisible="{Binding ShowSameForAllGames}" />
 
     <Panel Grid.Row="4">
       <views:LightingView DataContext="{Binding Lighting}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsLighting}" />

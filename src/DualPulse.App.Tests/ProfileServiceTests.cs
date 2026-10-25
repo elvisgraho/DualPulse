@@ -66,6 +66,43 @@ public sealed class ProfileServiceTests : IDisposable
 	}
 
 	[Fact]
+	public void NamedProfile_HasNoGame_AndAUniqueKey()
+	{
+		GameProfile shooter = GameProfile.Named("Shooter", []);
+
+		Assert.True(shooter.IsNamed);
+		Assert.False(Forza.IsNamed);
+		Assert.Equal("Shooter", shooter.Name);
+		Assert.Equal("Shooter 2", GameProfile.Named("Shooter", [shooter]).Name);
+	}
+
+	[Fact]
+	public void ChosenNamedProfile_AppliesWhileNoGameProfileIsInFront()
+	{
+		TriggerSettings heavy = new(Left: new TriggerEffectSettings(TriggerKind.Resistance, Strength: 8));
+		GameProfile shooter = GameProfile.Named("Shooter", []) with { Triggers = heavy };
+		settings.Update(s => s with { Profiles = [Forza, shooter], ChosenProfile = shooter.Exe });
+
+		watcher.Focus("notepad.exe");
+		Assert.Equal(shooter, profiles.Active);
+		Assert.Equal(heavy, profiles.Effective.EffectiveTriggers);
+
+		// A game with its own profile still wins while it's in front.
+		watcher.Focus("ForzaHorizon5.exe");
+		Assert.Equal(Forza, profiles.Active);
+	}
+
+	[Fact]
+	public void ChosenProfile_ThatNoLongerExists_FallsBackToDefault()
+	{
+		settings.Update(s => s with { ChosenProfile = GameProfile.NamedPrefix + "Gone" });
+
+		watcher.Focus("notepad.exe");
+
+		Assert.Null(profiles.Active);
+	}
+
+	[Fact]
 	public void ForegroundGame_ActivatesItsProfile()
 	{
 		watcher.Focus("forzahorizon5.EXE");

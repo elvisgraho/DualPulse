@@ -82,13 +82,16 @@ public partial class App : Application
 		emulation.Click += (_, _) => home.ToggleEmulationCommand.Execute(null);
 		NativeMenuItem pcControl = new("PC control (PS + Options)") { ToggleType = MenuItemToggleType.CheckBox };
 		pcControl.Click += (_, _) => home.TogglePcControlCommand.Execute(null);
+		// Named profiles to switch to by hand; shown once one exists.
+		NativeMenu profileChoices = new();
+		NativeMenuItem profile = new("Profile") { Menu = profileChoices };
 		NativeMenuItem powerOff = new("Turn controller off");
 		powerOff.Click += (_, _) => home.PowerOffCommand.Execute(null);
 		NativeMenuItem open = new("Open");
 		open.Click += OnOpenClicked;
 		NativeMenuItem quit = new("Quit");
 		quit.Click += OnQuitClicked;
-		tray.Menu = new NativeMenu { Items = { status, new NativeMenuItemSeparator(), emulation, pcControl, powerOff, new NativeMenuItemSeparator(), open, quit } };
+		tray.Menu = new NativeMenu { Items = { status, new NativeMenuItemSeparator(), emulation, pcControl, profile, powerOff, new NativeMenuItemSeparator(), open, quit } };
 
 		void Update()
 		{
@@ -97,6 +100,14 @@ public partial class App : Application
 			emulation.IsChecked = home.EmulationOn;
 			pcControl.IsChecked = home.PcControlOn;
 			powerOff.IsEnabled = home.PowerOffCommand.CanExecute(null);
+			profile.IsVisible = home.ShowProfilePicker;
+			profileChoices.Items.Clear();
+			foreach (ProfileChoice choice in home.NamedProfiles)
+			{
+				NativeMenuItem item = new(choice.Label) { ToggleType = MenuItemToggleType.Radio, IsChecked = choice == home.ChosenProfile };
+				item.Click += (_, _) => home.ChosenProfile = choice;
+				profileChoices.Items.Add(item);
+			}
 		}
 
 		Update();

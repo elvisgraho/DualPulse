@@ -91,6 +91,14 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 	[ObservableProperty]
 	public partial bool IsAddingGame { get; private set; }
 
+	// Naming a new named profile (one not tied to a game, picked by hand on Home or in the tray).
+	[ObservableProperty]
+	public partial bool IsNamingProfile { get; private set; }
+
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(CreateProfileCommand))]
+	public partial string NewProfileName { get; set; } = "";
+
 	public ProfileChoice? SelectedProfile
 	{
 		get => Profiles.FirstOrDefault(c => c.Exe == selection?.Selected?.Exe);
@@ -106,7 +114,7 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	public bool IsActiveNow => selection?.IsActive(selection.Selected) == true;
 
-	// Lighting and Rumble aren't per game; they say so while a game profile is selected.
+	// Lighting, Rumble and Audio are not part of a profile; they say so while a profile is selected.
 	public bool ShowSameForAllGames => selection?.Selected != null && (IsLighting || IsRumble || IsAudio);
 
 	public bool CanRemove => selection?.Selected != null;
@@ -121,7 +129,37 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 	private void StartAddGame()
 	{
 		RunningGames = windows?.List(Environment.ProcessId) ?? [];
+		IsNamingProfile = false;
 		IsAddingGame = true;
+	}
+
+	[RelayCommand]
+	private void StartNewProfile()
+	{
+		IsAddingGame = false;
+		NewProfileName = "";
+		IsNamingProfile = true;
+	}
+
+	[RelayCommand]
+	private void CancelNewProfile()
+	{
+		IsNamingProfile = false;
+	}
+
+	private bool CanCreateProfile() => !string.IsNullOrWhiteSpace(NewProfileName);
+
+	[RelayCommand(CanExecute = nameof(CanCreateProfile))]
+	private void CreateProfile()
+	{
+		IsNamingProfile = false;
+		if (settings == null || selection == null)
+		{
+			return;
+		}
+		GameProfile created = GameProfile.Named(NewProfileName, settings.Current.EffectiveProfiles);
+		settings.Update(s => s with { Profiles = [.. s.EffectiveProfiles, created] });
+		selection.Select(created);
 	}
 
 	[RelayCommand]
@@ -155,7 +193,12 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 			return;
 		}
 		selection.Select(null);
-		settings.Update(s => s with { Profiles = [.. s.EffectiveProfiles.Where(p => !string.Equals(p.Exe, selected.Exe, StringComparison.OrdinalIgnoreCase))] });
+		settings.Update(s => s with
+		{
+			Profiles = [.. s.EffectiveProfiles.Where(p => !string.Equals(p.Exe, selected.Exe, StringComparison.OrdinalIgnoreCase))],
+			// A removed profile can't stay picked.
+			ChosenProfile = s.ChosenProfile == selected.Exe ? null : s.ChosenProfile
+		});
 	}
 
 	private void RefreshProfiles()

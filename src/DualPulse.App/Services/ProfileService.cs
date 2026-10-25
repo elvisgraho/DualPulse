@@ -15,8 +15,9 @@ public interface IProfileService
 	event Action? Changed;
 }
 
-// Applies a game's profile while its window has focus. DualPulse's own window keeps whatever is applied, so the
-// user can tweak a profile while playing. The saved settings are never rewritten here.
+// Applies a game's profile while its window has focus, otherwise the named profile picked by hand (if any). DualPulse's
+// own window keeps whatever is applied, so the user can tweak a profile while playing. The saved settings are never
+// rewritten here.
 public sealed class ProfileService : IProfileService, IHostedService, IDisposable
 {
 	private readonly ISettingsService settings;
@@ -92,7 +93,8 @@ public sealed class ProfileService : IProfileService, IHostedService, IDisposabl
 		lock (gate)
 		{
 			string? exe = gameExe;
-			Active = exe == null ? null : saved.EffectiveProfiles.FirstOrDefault(p => string.Equals(p.Exe, exe, StringComparison.OrdinalIgnoreCase));
+			GameProfile? game = exe == null ? null : saved.EffectiveProfiles.FirstOrDefault(p => !p.IsNamed && string.Equals(p.Exe, exe, StringComparison.OrdinalIgnoreCase));
+			Active = game ?? saved.EffectiveProfiles.FirstOrDefault(p => p.IsNamed && p.Exe == saved.ChosenProfile);
 			Effective = Merge(saved, Active);
 		}
 		Changed?.Invoke();

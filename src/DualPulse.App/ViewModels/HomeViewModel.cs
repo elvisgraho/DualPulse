@@ -51,6 +51,7 @@ public sealed partial class HomeViewModel : ObservableObject
 			OnPropertyChanged(nameof(SelectedTriggerPreset));
 			OnPropertyChanged(nameof(EmulationOn));
 			OnPropertyChanged(nameof(LightbarSwatches));
+			RefreshNamedProfiles();
 		});
 		controller.SessionChanged += OnBackgroundChange;
 		controller.SessionStarted += session => session.InputReceived += OnInput;
@@ -59,10 +60,52 @@ public sealed partial class HomeViewModel : ObservableObject
 			current.InputReceived += OnInput;
 		}
 		emulation.StatusChanged += OnBackgroundChange;
+		RefreshNamedProfiles();
 		Refresh();
 	}
 
 	public IReadOnlyList<SwatchChoice> LightbarSwatches => SwatchChoice.For(settings.Current.EffectiveLightbar);
+
+	// Default and the named profiles, for switching by hand; only shown once a named profile exists. Updated in place
+	// so the dropdown keeps its selection.
+	public System.Collections.ObjectModel.ObservableCollection<ProfileChoice> NamedProfiles { get; } = [];
+
+	public bool ShowProfilePicker => NamedProfiles.Count > 1;
+
+	public ProfileChoice? ChosenProfile
+	{
+		get => NamedProfiles.FirstOrDefault(c => c.Exe == settings.Current.ChosenProfile) ?? NamedProfiles.FirstOrDefault();
+		set
+		{
+			// The list control clears its selection while items change; that isn't the user choosing.
+			if (value != null && value.Exe != settings.Current.ChosenProfile)
+			{
+				settings.Update(s => s with { ChosenProfile = value.Exe });
+			}
+		}
+	}
+
+	private void RefreshNamedProfiles()
+	{
+		IReadOnlyList<ProfileChoice> choices = [new("Default", null), .. settings.Current.EffectiveProfiles.Where(p => p.IsNamed).Select(p => new ProfileChoice(p.Name, p.Exe))];
+		for (int i = 0; i < choices.Count; i++)
+		{
+			if (i == NamedProfiles.Count)
+			{
+				NamedProfiles.Add(choices[i]);
+			}
+			else if (NamedProfiles[i] != choices[i])
+			{
+				NamedProfiles[i] = choices[i];
+			}
+		}
+		while (NamedProfiles.Count > choices.Count)
+		{
+			NamedProfiles.RemoveAt(NamedProfiles.Count - 1);
+		}
+		OnPropertyChanged(nameof(ShowProfilePicker));
+		OnPropertyChanged(nameof(ChosenProfile));
+	}
 
 	public IReadOnlyList<TriggerPreset> TriggerPresets { get; } = [TriggerPreset.Off, TriggerPreset.Feedback, TriggerPreset.Weapon, TriggerPreset.Vibration];
 

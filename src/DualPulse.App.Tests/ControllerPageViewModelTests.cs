@@ -99,6 +99,35 @@ public sealed class ControllerPageViewModelTests : IDisposable
 	}
 
 	[Fact]
+	public void NewProfile_NeedsAName_ThenCreatesAndSelectsIt()
+	{
+		page.StartNewProfileCommand.Execute(null);
+		Assert.True(page.IsNamingProfile);
+		Assert.False(page.CreateProfileCommand.CanExecute(null));
+
+		page.NewProfileName = "Racing";
+		page.CreateProfileCommand.Execute(null);
+
+		Assert.False(page.IsNamingProfile);
+		GameProfile racing = settings.Current.EffectiveProfiles.Single(p => p.IsNamed);
+		Assert.Equal("Racing", racing.Name);
+		Assert.Equal(racing, selection.Selected);
+		Assert.Equal(["Default", "Forza Horizon 5", "Racing"], page.Profiles.Select(p => p.Label));
+	}
+
+	[Fact]
+	public void RemovingTheChosenProfile_GoesBackToDefault()
+	{
+		GameProfile racing = GameProfile.Named("Racing", []);
+		settings.Update(s => s with { Profiles = [Forza, racing], ChosenProfile = racing.Exe });
+		selection.Select(racing);
+
+		page.RemoveProfileCommand.Execute(null);
+
+		Assert.Null(settings.Current.ChosenProfile);
+	}
+
+	[Fact]
 	public void RemoveProfile_DeletesIt_AndGoesBackToDefault()
 	{
 		page.SelectedProfile = page.Profiles[1];
