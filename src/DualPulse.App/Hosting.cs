@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,11 @@ internal static class Hosting
 
 	// Before the rename to DualPulse.
 	private static string PreviousDataFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Resonance");
+
+	// This build's version (from the project, or the release tag on GitHub builds).
+	private static Version CurrentVersion { get; } = Version.TryParse(
+		(typeof(Hosting).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "").Split('+', '-')[0],
+		out Version? version) ? version : new Version(0, 0);
 
 	public static string LogsFolder { get; } = Path.Combine(DataFolder, "logs");
 
@@ -84,6 +90,11 @@ internal static class Hosting
 		builder.Services.AddHostedService(s => s.GetRequiredService<PcControlService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<GyroService>());
 		builder.Services.AddSingleton<INotifier, ToastNotifier>();
+		builder.Services.AddSingleton<IReleaseFeed>(_ => new GitHubReleaseFeed(CurrentVersion));
+		builder.Services.AddSingleton(s => new UpdateService(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IReleaseFeed>(),
+			s.GetRequiredService<INotifier>(), s.GetRequiredService<TimeProvider>(), CurrentVersion));
+		builder.Services.AddSingleton<IUpdateService>(s => s.GetRequiredService<UpdateService>());
+		builder.Services.AddHostedService(s => s.GetRequiredService<UpdateService>());
 		builder.Services.AddSingleton<BatteryAlertService>();
 		builder.Services.AddHostedService(s => s.GetRequiredService<BatteryAlertService>());
 		builder.Services.AddSingleton(s => new StartupService(s.GetRequiredService<IRunRegistry>(), s.GetRequiredService<ISettingsService>(),
@@ -102,7 +113,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<MappingViewModel>();
 		builder.Services.AddSingleton(s => new EmulationViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IEmulationService>(),
 			s.GetRequiredService<IVirtualPadBackend>(), s.GetRequiredService<IHidHideService>(), PlatformServices.ViGEmBusVersion));
-		builder.Services.AddSingleton(s => new SettingsViewModel(s.GetRequiredService<ISettingsService>(), LogsFolder));
+		builder.Services.AddSingleton(s => new SettingsViewModel(s.GetRequiredService<ISettingsService>(), LogsFolder, updates: s.GetRequiredService<IUpdateService>()));
 		builder.Services.AddSingleton<ShellViewModel>();
 		return builder.Build();
 	}

@@ -18,12 +18,42 @@ public sealed partial class SettingsViewModel : ObservableObject
 
 	private readonly Action<string> open;
 
-	public SettingsViewModel(ISettingsService settings, string logsFolder, Action<string>? open = null)
+	private readonly IUpdateService? updates;
+
+	private readonly UiContext ui = new();
+
+	public SettingsViewModel(ISettingsService settings, string logsFolder, Action<string>? open = null, IUpdateService? updates = null)
 	{
 		this.settings = settings;
 		this.logsFolder = logsFolder;
 		this.open = open ?? OpenWithShell;
+		this.updates = updates;
+		if (updates != null)
+		{
+			updates.AvailableChanged += () => ui.Run(() =>
+			{
+				OnPropertyChanged(nameof(UpdateAvailable));
+				OnPropertyChanged(nameof(UpdateText));
+			});
+		}
 	}
+
+	public bool CheckForUpdates
+	{
+		get => settings.Current.CheckForUpdates;
+		set
+		{
+			if (value != settings.Current.CheckForUpdates)
+			{
+				settings.Update(s => s with { CheckForUpdates = value });
+				OnPropertyChanged();
+			}
+		}
+	}
+
+	public bool UpdateAvailable => updates?.Available != null;
+
+	public string UpdateText => updates?.Available is { } release ? $"Version {release.Version} is out" : "";
 
 	public IReadOnlyList<IdleTimeoutChoice> IdleTimeoutChoices { get; } =
 	[
@@ -94,6 +124,15 @@ public sealed partial class SettingsViewModel : ObservableObject
 	{
 		// FileLoggerProvider creates the folder at startup.
 		Open(logsFolder);
+	}
+
+	[RelayCommand]
+	private void DownloadUpdate()
+	{
+		if (updates?.Available is { } release)
+		{
+			Open(release.Url);
+		}
 	}
 
 	[RelayCommand]

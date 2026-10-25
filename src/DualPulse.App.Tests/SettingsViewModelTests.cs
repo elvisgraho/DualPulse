@@ -53,6 +53,24 @@ public sealed class SettingsViewModelTests
 	}
 
 	[Fact]
+	public void Settings_UpdateCheck_IsOptIn_AndANewVersionLinksToItsPage()
+	{
+		FakeUpdateService updates = new();
+		SettingsViewModel viewModel = new(settings, @"C:\data\logs", opened.Add, updates);
+		Assert.False(viewModel.CheckForUpdates);
+		Assert.False(viewModel.UpdateAvailable);
+
+		viewModel.CheckForUpdates = true;
+		updates.Announce(new ReleaseInfo(new Version(0, 2, 0), "https://github.com/elvisgraho/DualPulse/releases/tag/v0.2.0"));
+		viewModel.DownloadUpdateCommand.Execute(null);
+
+		Assert.True(settings.Current.CheckForUpdates);
+		Assert.True(viewModel.UpdateAvailable);
+		Assert.Equal("Version 0.2.0 is out", viewModel.UpdateText);
+		Assert.Equal("https://github.com/elvisgraho/DualPulse/releases/tag/v0.2.0", opened[^1]);
+	}
+
+	[Fact]
 	public void Settings_OpenFails_DoesNotThrow()
 	{
 		SettingsViewModel viewModel = new(settings, @"C:\data\logs", _ => throw new System.ComponentModel.Win32Exception("No application is associated"));
@@ -70,5 +88,18 @@ public sealed class SettingsViewModelTests
 
 		Assert.True(settings.Current.StartWithWindows);
 		Assert.True(viewModel.StartWithWindows);
+	}
+}
+
+internal sealed class FakeUpdateService : IUpdateService
+{
+	public ReleaseInfo? Available { get; private set; }
+
+	public event Action? AvailableChanged;
+
+	public void Announce(ReleaseInfo release)
+	{
+		Available = release;
+		AvailableChanged?.Invoke();
 	}
 }

@@ -58,6 +58,17 @@
             </StackPanel>
             <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding StartWithWindows}" />
           </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Tell me when there's a new version" />
+              <TextBlock Classes="caption" Text="Checks GitHub once a day." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding CheckForUpdates}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding UpdateAvailable}">
+            <TextBlock VerticalAlignment="Center" Text="{Binding UpdateText}" />
+            <Button Grid.Column="2" Content="Download" Command="{Binding DownloadUpdateCommand}" />
+          </Grid>
         </StackPanel>
       </Border>
 
