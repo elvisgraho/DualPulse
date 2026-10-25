@@ -1,0 +1,31 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      options: [Bluetooth, Cable, Both / switching]
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game or app
+      description: If it happens in a particular game.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: In DualPulse, open Settings and click Copy diagnostics, then paste here. Your Bluetooth address and user name are left out.
+      render: text
+    validations:
+      required: true

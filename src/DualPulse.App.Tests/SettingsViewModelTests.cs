@@ -71,6 +71,22 @@ public sealed class SettingsViewModelTests
 	}
 
 	[Fact]
+	public async Task Settings_CopyDiagnostics_PutsTheReportOnTheClipboard()
+	{
+		List<string> copied = [];
+		SettingsViewModel viewModel = new(settings, @"C:\data\logs", opened.Add, diagnostics: () => "report", copy: text =>
+		{
+			copied.Add(text);
+			return Task.CompletedTask;
+		});
+
+		await viewModel.CopyDiagnosticsCommand.ExecuteAsync(null);
+
+		Assert.Equal(["report"], copied);
+		Assert.Equal("Copied. Paste it into your bug report.", viewModel.DiagnosticsStatus);
+	}
+
+	[Fact]
 	public void Settings_OpenFails_DoesNotThrow()
 	{
 		SettingsViewModel viewModel = new(settings, @"C:\data\logs", _ => throw new System.ComponentModel.Win32Exception("No application is associated"));

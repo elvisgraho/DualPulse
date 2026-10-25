@@ -20,10 +20,17 @@ public sealed partial class SettingsViewModel : ObservableObject
 
 	private readonly IUpdateService? updates;
 
+	private readonly Func<string>? diagnostics;
+
+	private readonly Func<string, Task>? copy;
+
 	private readonly UiContext ui = new();
 
-	public SettingsViewModel(ISettingsService settings, string logsFolder, Action<string>? open = null, IUpdateService? updates = null)
+	public SettingsViewModel(ISettingsService settings, string logsFolder, Action<string>? open = null, IUpdateService? updates = null,
+		Func<string>? diagnostics = null, Func<string, Task>? copy = null)
 	{
+		this.diagnostics = diagnostics;
+		this.copy = copy;
 		this.settings = settings;
 		this.logsFolder = logsFolder;
 		this.open = open ?? OpenWithShell;
@@ -50,6 +57,10 @@ public sealed partial class SettingsViewModel : ObservableObject
 			}
 		}
 	}
+
+	// Shown after Copy diagnostics.
+	[ObservableProperty]
+	public partial string DiagnosticsStatus { get; private set; } = "";
 
 	public bool UpdateAvailable => updates?.Available != null;
 
@@ -124,6 +135,24 @@ public sealed partial class SettingsViewModel : ObservableObject
 	{
 		// FileLoggerProvider creates the folder at startup.
 		Open(logsFolder);
+	}
+
+	[RelayCommand]
+	private async Task CopyDiagnostics()
+	{
+		if (diagnostics == null || copy == null)
+		{
+			return;
+		}
+		try
+		{
+			await copy(diagnostics());
+			DiagnosticsStatus = "Copied. Paste it into your bug report.";
+		}
+		catch (Exception exception) when (exception is InvalidOperationException or System.Runtime.InteropServices.COMException)
+		{
+			DiagnosticsStatus = "Couldn't copy. Try again.";
+		}
 	}
 
 	[RelayCommand]

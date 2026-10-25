@@ -114,8 +114,21 @@ internal static class Hosting
 		builder.Services.AddSingleton(s => new EmulationViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IEmulationService>(),
 			s.GetRequiredService<IVirtualPadBackend>(), s.GetRequiredService<IHidHideService>(), PlatformServices.ViGEmBusVersion,
 			steamRunning: PlatformServices.SteamRunning));
-		builder.Services.AddSingleton(s => new SettingsViewModel(s.GetRequiredService<ISettingsService>(), LogsFolder, updates: s.GetRequiredService<IUpdateService>()));
+		builder.Services.AddSingleton(s => new Diagnostics(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IControllerService>(),
+			s.GetRequiredService<IEmulationService>(), s.GetRequiredService<IVirtualPadBackend>(), s.GetRequiredService<IHidHideService>(),
+			PlatformServices.ViGEmBusVersion, LogsFolder, CurrentVersion.ToString(3), System.Runtime.InteropServices.RuntimeInformation.OSDescription));
+		builder.Services.AddSingleton(s => new SettingsViewModel(s.GetRequiredService<ISettingsService>(), LogsFolder, updates: s.GetRequiredService<IUpdateService>(),
+			diagnostics: s.GetRequiredService<Diagnostics>().Build, copy: CopyToClipboard));
 		builder.Services.AddSingleton<ShellViewModel>();
 		return builder.Build();
+	}
+
+	private static async Task CopyToClipboard(string text)
+	{
+		if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+			{ MainWindow.Clipboard: { } clipboard })
+		{
+			await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text);
+		}
 	}
 }
