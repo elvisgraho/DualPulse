@@ -278,7 +278,8 @@ internal sealed class FakePadBackend : IVirtualPadBackend
 	// The virtual DualSense has its own backend (usbip-win2), available or not apart from ViGEm.
 	public bool DualSenseAvailable { get; set; } = true;
 
-	public bool IsAvailableFor(PadKind kind) => IsAvailable && (kind != PadKind.DualSense || DualSenseAvailable);
+	// Like the app's composite backend: the DualSense needs usbip-win2 only, the others ViGEmBus.
+	public bool IsAvailableFor(PadKind kind) => kind == PadKind.DualSense ? DualSenseAvailable : IsAvailable;
 
 	public List<FakePad> Created { get; } = [];
 

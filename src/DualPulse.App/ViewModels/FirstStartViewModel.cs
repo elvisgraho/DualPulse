@@ -16,35 +16,64 @@ public static class DriverPages
 	public const string UsbIpWin2 = "https://github.com/vadimgrn/usbip-win2/releases";
 }
 
-public sealed record SetupChoice(string Label, string Detail, PadKind? Kind);
+// One answer to "how should games see your controller?", with whether its driver is installed.
+public sealed partial class SetupChoice(string label, string detail, PadKind? kind, string? driver, string? driverPage) : ObservableObject
+{
+	public string Label { get; } = label;
 
-// The first-start window: how games should see the controller. Picking a mode whose driver is there finishes it; with
-// the driver missing it stays open with a link to it, and closing the window finishes it (SetupDone).
+	public string Detail { get; } = detail;
+
+	public PadKind? Kind { get; } = kind;
+
+	public string? DriverPage { get; } = driverPage;
+
+	[ObservableProperty]
+	public partial bool Ready { get; private set; } = true;
+
+	[ObservableProperty]
+	public partial string Status { get; private set; } = "Ready";
+
+	internal void Update(bool installed)
+	{
+		Ready = driver == null || installed;
+		Status = Ready ? "Ready" : $"Needs the free {driver} driver";
+	}
+}
+
+// The first-start window: how games should see the controller, with what each choice needs installed, and HidHide for
+// hiding the real controller. Picking a ready choice finishes it; a choice that needs a driver waits until it is
+// installed (Recheck, every few seconds). Closing the window also finishes it (SetupDone).
 public sealed partial class FirstStartViewModel : ObservableObject
 {
 	private readonly ISettingsService settings;
 
 	private readonly IVirtualPadBackend backend;
 
+	private readonly IHidHideService hidHide;
+
 	private readonly Action<string> open;
 
-	public FirstStartViewModel(ISettingsService settings, IVirtualPadBackend backend, Action<string>? open = null)
+	public FirstStartViewModel(ISettingsService settings, IVirtualPadBackend backend, IHidHideService hidHide, Action<string>? open = null)
 	{
 		this.settings = settings;
 		this.backend = backend;
+		this.hidHide = hidHide;
 		this.open = open ?? (target => Process.Start(new ProcessStartInfo(target) { UseShellExecute = true })?.Dispose());
+		Choices =
+		[
+			new("Xbox controller", "Works in every game.", PadKind.Xbox360, "ViGEmBus", DriverPages.ViGEmBus),
+			new("DualSense", "Adaptive triggers and haptics in games that support them, also over Bluetooth.", PadKind.DualSense,
+				"usbip-win2", DriverPages.UsbIpWin2),
+			new("No virtual controller", "Games use your DualSense directly.", null, null, null)
+		];
+		UpdateDrivers();
 	}
 
-	public IReadOnlyList<SetupChoice> Choices { get; } =
-	[
-		new("Xbox controller", "Works in every game.", PadKind.Xbox360),
-		new("DualSense", "Adaptive triggers and haptics in games that support them, also over Bluetooth.", PadKind.DualSense),
-		new("No virtual controller", "Games use your DualSense directly.", null)
-	];
+	public IReadOnlyList<SetupChoice> Choices { get; }
 
 	public bool IsVisible => !settings.Current.SetupDone;
 
-	// A ready mode was picked: the window closes.
+	// A ready choice was picked: the window closes.
 	public event Action? Finished;
 
 	public SetupChoice? SelectedChoice
@@ -54,70 +83,23 @@ public sealed partial class FirstStartViewModel : ObservableObject
 		{
 			if (value != null && SetProperty(ref field, value))
 			{
-				Choose(value);
+				settings.Update(s => s with { Emulation = value.Kind });
+				FinishIfReady();
 			}
 		}
 	}
 
 	[ObservableProperty]
-	public partial bool HasChosen { get; private set; }
+	public partial bool HidHideReady { get; private set; }
 
 	[ObservableProperty]
-	public partial string DriverText { get; private set; } = "";
+	public partial string HidHideStatus { get; private set; } = "";
 
-	[ObservableProperty]
-	public partial bool DriverMissing { get; private set; }
-
-	private string? driverPage;
-
-	// While the picked mode's driver is missing (the window checks every few seconds): finishes once it is installed.
+	// Called every few seconds while the window is open: notices drivers installed meanwhile.
 	public void Recheck()
 	{
-		if (DriverMissing && SelectedChoice is { } choice)
-		{
-			CheckDriver(choice);
-		}
-	}
-
-	private void Choose(SetupChoice choice)
-	{
-		settings.Update(s => s with { Emulation = choice.Kind });
-		CheckDriver(choice);
-	}
-
-	private void CheckDriver(SetupChoice choice)
-	{
-		(string? name, string? page) = choice.Kind switch
-		{
-			PadKind.Xbox360 or PadKind.DualShock4 when !backend.IsAvailable => ("ViGEmBus", DriverPages.ViGEmBus),
-			PadKind.DualSense when !backend.IsAvailableFor(PadKind.DualSense) => ("usbip-win2", DriverPages.UsbIpWin2),
-			_ => ((string?)null, (string?)null)
-		};
-		driverPage = page;
-		DriverMissing = page != null;
-		DriverText = name == null ? "" : $"Needs the free {name} driver.";
-		HasChosen = true;
-		if (page == null)
-		{
-			Dismiss();
-			Finished?.Invoke();
-		}
-	}
-
-	[RelayCommand]
-	private void GetDriver()
-	{
-		if (driverPage == null)
-		{
-			return;
-		}
-		try
-		{
-			open(driverPage);
-		}
-		catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
-		{
-		}
+		UpdateDrivers();
+		FinishIfReady();
 	}
 
 	// Closed either way: it doesn't open again.
@@ -127,6 +109,48 @@ public sealed partial class FirstStartViewModel : ObservableObject
 		{
 			settings.Update(s => s with { SetupDone = true });
 			OnPropertyChanged(nameof(IsVisible));
+		}
+	}
+
+	[RelayCommand]
+	private void GetDriver(SetupChoice choice)
+	{
+		if (choice.DriverPage is { } page)
+		{
+			Open(page);
+		}
+	}
+
+	[RelayCommand]
+	private void GetHidHide() => Open(DriverPages.HidHide);
+
+	private void UpdateDrivers()
+	{
+		foreach (SetupChoice choice in Choices)
+		{
+			choice.Update(choice.Kind is { } kind && backend.IsAvailableFor(kind));
+		}
+		HidHideReady = hidHide.Status is not (Services.HidHideStatus.NotInstalled or Services.HidHideStatus.NotAttached);
+		HidHideStatus = HidHideReady ? "HidHide is installed." : "Needs the free HidHide driver.";
+	}
+
+	private void FinishIfReady()
+	{
+		if (SelectedChoice is { Ready: true } && !settings.Current.SetupDone)
+		{
+			Dismiss();
+			Finished?.Invoke();
+		}
+	}
+
+	private void Open(string target)
+	{
+		try
+		{
+			open(target);
+		}
+		catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
+		{
 		}
 	}
 }

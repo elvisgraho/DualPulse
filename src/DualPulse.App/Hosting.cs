@@ -102,7 +102,8 @@ internal static class Hosting
 		builder.Services.AddHostedService(s => s.GetRequiredService<StartupService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<PowerService>());
 		builder.Services.AddSingleton<ProfileSelection>();
-		builder.Services.AddSingleton(s => new FirstStartViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IVirtualPadBackend>()));
+		builder.Services.AddSingleton(s => new FirstStartViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IVirtualPadBackend>(),
+			s.GetRequiredService<IHidHideService>()));
 		builder.Services.AddSingleton<HomeViewModel>();
 		builder.Services.AddSingleton<LightingViewModel>();
 		builder.Services.AddSingleton<TriggersViewModel>();

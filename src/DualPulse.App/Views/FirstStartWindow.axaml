@@ -33,6 +33,9 @@
         <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
           <Setter Property="Background" Value="Transparent" />
         </Style>
+        <Style Selector="TextBlock.caption.ready">
+          <Setter Property="Foreground" Value="{StaticResource Positive}" />
+        </Style>
         <Style Selector="ListBoxItem Border.choice">
           <Setter Property="BorderBrush" Value="{StaticResource Border}" />
         </Style>
@@ -44,17 +47,27 @@
         <DataTemplate x:DataType="vm:SetupChoice">
           <Border Classes="choice" Background="{StaticResource Surface}" BorderThickness="2"
                   CornerRadius="{StaticResource ControlRadius}" Padding="12,8">
-            <StackPanel Spacing="2">
-              <TextBlock Text="{Binding Label}" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Detail}" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,8,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Label}" />
+                <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Detail}" />
+                <TextBlock Classes="caption" Classes.ready="{Binding Ready}" Text="{Binding Status}" />
+              </StackPanel>
+              <Button Grid.Column="2" VerticalAlignment="Center" Content="Get"
+                      Command="{Binding $parent[ListBox].((vm:FirstStartViewModel)DataContext).GetDriverCommand}"
+                      CommandParameter="{Binding}" IsVisible="{Binding !Ready}" />
+            </Grid>
           </Border>
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
-    <Grid ColumnDefinitions="*,8,Auto" IsVisible="{Binding DriverMissing}">
-      <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding DriverText}" />
-      <Button Grid.Column="2" Content="Get driver" Command="{Binding GetDriverCommand}" IsVisible="{Binding DriverMissing}" />
+    <Grid ColumnDefinitions="*,8,Auto">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Hide your DualSense from games" />
+        <TextBlock Classes="caption" TextWrapping="Wrap" Text="Recommended with a virtual controller, so games don't see two." />
+        <TextBlock Classes="caption" Classes.ready="{Binding HidHideReady}" Text="{Binding HidHideStatus}" />
+      </StackPanel>
+      <Button Grid.Column="2" VerticalAlignment="Center" Content="Get" Command="{Binding GetHidHideCommand}" IsVisible="{Binding !HidHideReady}" />
     </Grid>
     <TextBlock Classes="caption" TextWrapping="Wrap" Text="You can change this any time on the Emulation page." />
   </StackPanel>
