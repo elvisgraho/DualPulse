@@ -1,12 +1,18 @@
 name: Release
 
-# Push a tag like v0.2.0: tests run, then the self-contained zip is attached to a new GitHub release.
+# Push a tag like v0.2.0: tests run, the self-contained build is made, DualPulse.exe is signed through SignPath (once
+# the SIGNPATH_* settings exist, see below), and the zip is attached to a new GitHub release.
+#
+# Signing setup, after SignPath approves the project: repository variables SIGNPATH_ORGANIZATION_ID,
+# SIGNPATH_PROJECT_SLUG and SIGNPATH_SIGNING_POLICY_SLUG, and the secret SIGNPATH_API_TOKEN. Without them the release is
+# published unsigned.
 on:
   push:
     tags: [ 'v*' ]
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
@@ -30,8 +36,41 @@ jobs:
       shell: pwsh
       run: ./tools/publish.ps1 -Version "${{ github.ref_name }}".TrimStart('v')
 
+    - name: Upload the unsigned exe
+      id: unsigned
+      if: vars.SIGNPATH_ORGANIZATION_ID != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: unsigned
+        path: artifacts/publish/DualPulse.exe
+
+    # Waits for the signing request to be approved in SignPath (each release is approved by hand).
+    - name: Sign through SignPath
+      if: vars.SIGNPATH_ORGANIZATION_ID != ''
+      uses: signpath/github-action-submit-signing-request@v3
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+        signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+        wait-for-completion: true
+        wait-for-completion-timeout-in-seconds: 3600
+        output-artifact-directory: artifacts/signed
+
+    - name: Zip the signed exe
+      if: vars.SIGNPATH_ORGANIZATION_ID != ''
+      shell: pwsh
+      run: |
+        Copy-Item artifacts/signed/DualPulse.exe artifacts/publish/DualPulse.exe -Force
+        $zip = (Get-Item artifacts/*.zip).FullName
+        Remove-Item $zip
+        Compress-Archive -Path artifacts/publish/* -DestinationPath $zip
+
     - name: Create the release
       shell: pwsh
       env:
         GH_TOKEN: ${{ github.token }}
-      run: gh release create "${{ github.ref_name }}" (Get-Item artifacts/*.zip).FullName --title "DualPulse ${{ github.ref_name }}" --generate-notes
+      run: |
+        $notes = "Download the zip below, unzip it and run DualPulse.exe. [Code signing policy](https://elvisgraho.github.io/DualPulse/#code-signing-policy)"
+        gh release create "${{ github.ref_name }}" (Get-Item artifacts/*.zip).FullName --title "DualPulse ${{ github.ref_name }}" --notes $notes --generate-notes

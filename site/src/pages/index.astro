@@ -65,10 +65,7 @@ const jsonLd = {
           <a class="button" href={repo}>View source</a>
         </div>
         <p class="small">Windows 10 and 11 · No install · MIT license</p>
-        <p class="small">
-          Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by
-          <a href="https://signpath.org">SignPath Foundation</a>.
-        </p>
+        <p class="small"><a href="#code-signing-policy">Code signing policy</a></p>
       </section>
 
       <section class="wrap">
@@ -100,6 +97,30 @@ const jsonLd = {
             usbip-win2 or HidHide).
           </li>
         </ol>
+        <p class="small">
+          To remove DualPulse, turn off Hide my DualSense and Start with Windows, then delete its folder and
+          <code>%LOCALAPPDATA%\DualPulse</code>.
+        </p>
+      </section>
+
+      <section class="wrap" id="code-signing-policy">
+        <h2>Code signing policy</h2>
+        <p>
+          Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.
+        </p>
+        <ul class="plain">
+          <li>Committers and reviewers: <a href="https://github.com/elvisgraho">elvisgraho</a></li>
+          <li>Approvers: <a href="https://github.com/elvisgraho">elvisgraho</a></li>
+        </ul>
+        <p>
+          Every release is built from this repository's source by GitHub Actions, and each signing request is approved
+          by hand.
+        </p>
+        <p>
+          Privacy: this program will not transfer any information to other networked systems unless specifically
+          requested by the user or the person installing or operating it. The only such request is the optional update
+          check. See the <a href={`${repo}/blob/main/PRIVACY.md`}>privacy policy</a>.
+        </p>
       </section>
     </main>
 
@@ -232,6 +253,9 @@ const jsonLd = {
   .steps {
     padding-left: 20px;
     color: var(--muted);
+  }
+  .plain {
+    padding-left: 20px;
   }
   .steps li {
     margin-bottom: 10px;
