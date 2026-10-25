@@ -99,7 +99,8 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 			WaveFormat format = device.AudioClient.MixFormat;
 			channels = format.Channels;
 			buffer = new BufferedWaveProvider(format) { DiscardOnBufferOverflow = true, BufferDuration = TimeSpan.FromMilliseconds(200), ReadFully = true };
-			output = new WasapiOut(device, AudioClientShareMode.Shared, true, 20);
+			// 15 ms: 10 kept up in testing, the extra 5 is headroom for busier machines.
+			output = new WasapiOut(device, AudioClientShareMode.Shared, true, 15);
 			output.Init(buffer);
 			output.Play();
 		}
