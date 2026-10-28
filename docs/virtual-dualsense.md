@@ -1,7 +1,7 @@
 # Virtual DualSense (Phase V): setup and first test
 
-Most games with native DualSense support (adaptive triggers, haptics, speaker) only turn those features on for a USB
-DualSense. In this mode DualPulse plugs in a virtual USB DualSense of its own. It relays what the game sends to your
+Most games with native DualSense support (adaptive triggers, haptics, speaker, microphone) only turn those features
+on for a USB DualSense. In this mode DualPulse plugs in a virtual USB DualSense of its own. It relays what the game sends to your
 real controller over Bluetooth, and relays your controller's input to the game.
 
 The virtual controller is DualPulse's own code (`VirtualDualSense`, served over USB/IP on localhost). Windows still
@@ -41,11 +41,23 @@ needs a USB/IP driver to plug it in: **usbip-win2**. Nothing else has to be inst
 - Isochronous audio runs on a 1 ms frame clock. Windows sends 10 ms transfers; each one completes after its 10
   frames, with consecutive start frames. Completing them instantly makes Windows race ahead and reset the pipe.
 
-## Cable haptics after Bluetooth
+## Microphone
+
+The virtual DualSense has a microphone of its own (in Windows: the second "Headset Microphone (DualSense Wireless
+Controller)"; the Microphone tab names it). On the cable, while something records from it, DualPulse fills it with
+the real controller's microphone, through a 100 Hz low cut, a noise gate that ignores mouth clicks (it opens only
+after 20 ms of sound, with 30 ms look-ahead; the threshold is set on the Microphone tab) and an optional boost. The
+real microphone is only open while something records. Over Bluetooth the controller sends no microphone yet.
+
+The DualSense already gates and suppresses noise in its own microphone, and its sound has some low crackle of its own
+(also when recorded directly); the low cut softens it.
+
+## Cable sound after Bluetooth
 
 On the cable, a game's haptics are sound on channels 3-4 of the controller's own USB audio device; DualPulse plays
 them there. But a DualSense that has been connected over Bluetooth since it was switched on ignores that sound (it
-still arrives: Windows meters it at full level) until it is switched off and on. This happens without DualPulse too
+still arrives: Windows meters it at full level) until it is switched off and on. Its microphone stays silent until
+then too (the Microphone tab says so). This happens without DualPulse too
 (tested 2026-10-25 with DualPulse closed). DualPulse shows a notice when the controller is plugged in from Bluetooth
 in DualSense mode. To keep haptics while charging mid-game, charge from a USB charger or power bank: the controller
 then stays on Bluetooth.
@@ -55,10 +67,10 @@ the motor bits only while the motors run.
 
 ## Notes
 
-- While a game drives the virtual DualSense, its output overrides DualPulse's lighting and trigger settings.
-  DualPulse's own sound-to-haptics and controller audio stand down.
-- Over USB, input and the game's output block are relayed, but game audio is not. Over USB the game can use the real
-  controller directly anyway.
+- While a game drives the virtual DualSense, it sets the lights and adaptive triggers unless you turn that off on the
+  Emulation page; anything it never sets stays yours. DualPulse's own sound-to-haptics and controller audio stand
+  down.
+- Over USB, the game's haptics and speaker sound go to the real controller's own sound device.
 - Other operating systems: the device and server are portable. Only the attacher is Windows-specific. Linux would
   need one for the `vhci-hcd` driver's `usbip` tool, which needs root.
 - History: Phase V first used VIIPER for the virtual device. That build dropped the device when game audio flowed,

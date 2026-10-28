@@ -4,16 +4,18 @@ const repo = 'https://github.com/elvisgraho/DualPulse';
 const download = `${repo}/releases/latest`;
 const title = 'DualPulse: free DualSense app for PC with Bluetooth haptics and adaptive triggers';
 const description =
-  'Free, open-source DualSense (PS5 controller) app for Windows: haptic feedback, adaptive triggers and the controller speaker over Bluetooth, Xbox 360 / DualShock 4 / DualSense emulation. A free DSX alternative.';
+  'Free, open-source DualSense (PS5 controller) app for Windows: haptic feedback, adaptive triggers, the controller speaker and microphone over Bluetooth and cable, Xbox 360 / DualShock 4 / DualSense emulation. A free DSX alternative.';
 const canonical = new URL(base, Astro.site).href;
 
 const features = [
   ['Wireless haptics and triggers', 'Games with DualSense support get adaptive triggers, haptics and speaker sound over Bluetooth, through a virtual DualSense.'],
-  ['Haptic feedback over Bluetooth', 'Game rumble plays as DualSense haptics, and PC sound can be felt in the grips.'],
+  ['Haptic feedback over Bluetooth', 'Game rumble plays as DualSense haptics, and PC sound can be felt in the grips, also on the cable.'],
   ['Every game works', 'Xbox 360, DualShock 4 or DualSense emulation, with your real controller hidden from games.'],
-  ['Per-game settings', 'Adaptive triggers and gyro aiming switch automatically with the game in front.'],
+  ['Profiles', 'Triggers, gyro and sticks per game, switching automatically with the game in front, or picked by hand.'],
+  ['Tuned for games', 'Stick deadzones, button remapping, gyro as the right stick and every adaptive trigger effect.'],
+  ['Microphone in games', "The controller's mic through the virtual DualSense, with a click-proof noise gate, low cut and boost."],
   ['PC control', 'Touchpad as a mouse, buttons as keys and media keys, a window switcher.'],
-  ['Lights and more', 'Lightbar colours, battery on the player LEDs, a real mic mute button, DSX mods.'],
+  ['Lights and more', 'Lightbar colours, battery on the player LEDs, a real mic mute button, controller details, DSX mods.'],
 ];
 
 const jsonLd = {
@@ -57,8 +59,8 @@ const jsonLd = {
       <section class="wrap hero">
         <h1>Your DualSense, fully working on PC. <span>Even wireless.</span></h1>
         <p class="lead">
-          Adaptive triggers, haptic feedback and the controller speaker over Bluetooth, plus emulation so every game
-          works. Free and open source.
+          Adaptive triggers, haptic feedback, the controller speaker and microphone over Bluetooth, plus emulation so
+          every game works. Free and open source.
         </p>
         <div class="actions">
           <a class="button primary" href={download}>Download for Windows</a>

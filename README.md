@@ -1,18 +1,22 @@
 # DualPulse: free DualSense app for PC
 
 Get everything out of a PS5 DualSense controller on Windows, **including over Bluetooth**: adaptive triggers, haptic
-feedback, the controller's speaker, lights and controller emulation. Free and open source, a free alternative to DSX.
+feedback, the controller's speaker and microphone, lights and controller emulation. Free and open source, a free
+alternative to DSX.
 
 ![DualPulse home screen](docs/images/home.png)
 
 ## Features
 
 - **Wireless haptics, adaptive triggers and speaker** for games with DualSense support, through a virtual DualSense.
-- **Haptic feedback over Bluetooth** from game rumble, and PC sound you can feel in the grips.
+- **Haptic feedback over Bluetooth** from game rumble, and PC sound you can feel in the grips (also on the cable).
 - **Emulation:** Xbox 360, DualShock 4 or DualSense, with your real controller hidden from games.
-- **Adaptive triggers and gyro per game**, switching automatically.
+- **Profiles:** triggers, gyro and sticks per game (switching automatically) or picked by hand.
+- **For games:** stick deadzones, button remapping, gyro as the right stick, all trigger effects.
+- **Microphone in games:** the controller's mic through the virtual DualSense, with a click-proof noise gate, low cut
+  and boost.
 - **PC control:** touchpad as mouse, buttons as keys and media keys.
-- **Lightbar, battery LEDs, mic mute button**, and DSX mods.
+- **Lightbar, battery LEDs, mic mute button**, controller details and DSX mods.
 
 ## Get started
 
@@ -24,8 +28,8 @@ feedback, the controller's speaker, lights and controller emulation. Free and op
    [usbip-win2](https://github.com/vadimgrn/usbip-win2/releases) for DualSense, and
    [HidHide](https://github.com/nefarius/HidHide/releases) to hide the real controller.
 
-After Bluetooth, the controller ignores game haptics over the cable until you turn it off and on again. More:
-[virtual DualSense](docs/virtual-dualsense.md).
+After Bluetooth, the controller's sound over the cable (game haptics and its microphone) stays off until you turn it
+off and on again. More: [virtual DualSense](docs/virtual-dualsense.md).
 
 ## Build from source
 
