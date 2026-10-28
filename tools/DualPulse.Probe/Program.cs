@@ -792,6 +792,26 @@ if (args.Length >= 1 && args[0] == "mic-sessions")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "mic-toggle")
+{
+	// Toggles the Windows default microphone's mute once, as the Mute button does in the app.
+	DualPulse.Emulation.WindowsMicrophone mic = new();
+	Console.WriteLine($"toggled: {mic.Toggle()}, muted={mic.IsMuted?.ToString() ?? "(none)"}");
+	return 0;
+}
+if (args.Length >= 1 && args[0] == "mic-endpoints")
+{
+	// The DualSense microphones in Windows (the real one and DualPulse's virtual one) with their mute flags.
+	using NAudio.CoreAudioApi.MMDeviceEnumerator enumerator = new();
+	foreach (NAudio.CoreAudioApi.MMDevice device in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
+	{
+		if (device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+		{
+			Console.WriteLine($"{device.FriendlyName} ({(DualPulse.Emulation.WindowsControllerUsbAudio.IsVirtual(device) ? "virtual" : "real")}): muted={device.AudioEndpointVolume.Mute}");
+		}
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "mic-threads")
 {
 	// As in the app: the microphone is created on a UI (STA) thread, the Mute button toggles it from the controller's

@@ -101,14 +101,34 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 		}
 	}
 
-	private static MMDevice? RealMicrophone()
+	public bool SetVirtualMicrophoneMuted(bool muted)
+	{
+		using MMDevice? device = DualSenseMicrophone(virtualOne: true);
+		try
+		{
+			if (device == null)
+			{
+				return false;
+			}
+			device.AudioEndpointVolume.Mute = muted;
+			return true;
+		}
+		catch (Exception)
+		{
+			return false;
+		}
+	}
+
+	private static MMDevice? RealMicrophone() => DualSenseMicrophone(virtualOne: false);
+
+	private static MMDevice? DualSenseMicrophone(bool virtualOne)
 	{
 		try
 		{
 			using MMDeviceEnumerator enumerator = new();
 			foreach (MMDevice device in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
 			{
-				if (device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase) && !IsVirtual(device))
+				if (device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase) && IsVirtual(device) == virtualOne)
 				{
 					return device;
 				}

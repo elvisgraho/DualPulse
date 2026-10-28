@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using DualPulse.Core.Audio;
 using DualPulse.Core.Devices;
 using DualPulse.Core.Protocol;
 using DualPulse.Emulation;
@@ -16,7 +17,8 @@ public interface IMicMuteService
 }
 
 // The Mute button mutes the Windows microphone (while the setting is on); the mute LED shows the result through
-// LightingService. A press toggles once however long it is held. Runs on the read thread.
+// LightingService. A press toggles once however long it is held. Runs on the read thread. The virtual DualSense's
+// microphone (what games record from) is flagged muted in Windows to match, so it doesn't look live while silent.
 public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposable
 {
 	private readonly IControllerService controller;
@@ -27,15 +29,28 @@ public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposabl
 
 	private readonly object gate = new();
 
+	private readonly object mirrorGate = new();
+
 	private ControllerSession? watched;
 
 	private bool wasHeld;
 
 	private readonly ILogger<MicMuteService>? logger;
 
-	public MicMuteService(IControllerService controller, ISettingsService settings, IMicrophone mic, ILogger<MicMuteService>? logger = null)
+	private readonly IControllerUsbAudio? usbAudio;
+
+	private readonly IEmulationService? emulation;
+
+	public MicMuteService(IControllerService controller, ISettingsService settings, IMicrophone mic, ILogger<MicMuteService>? logger = null,
+		IControllerUsbAudio? usbAudio = null, IEmulationService? emulation = null)
 	{
 		this.logger = logger;
+		this.usbAudio = usbAudio;
+		this.emulation = emulation;
+		if (emulation != null)
+		{
+			emulation.StatusChanged += OnEmulationChanged;
+		}
 		this.controller = controller;
 		this.settings = settings;
 		this.mic = mic;
@@ -63,6 +78,10 @@ public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposabl
 	public void Dispose()
 	{
 		mic.Changed -= OnMicChanged;
+		if (emulation != null)
+		{
+			emulation.StatusChanged -= OnEmulationChanged;
+		}
 		controller.SessionStarted -= Watch;
 		controller.SessionEnded -= Unwatch;
 		lock (gate)
@@ -123,5 +142,32 @@ public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposabl
 		}
 	}
 
-	private void OnMicChanged() => Changed?.Invoke();
+	private void OnMicChanged()
+	{
+		Task.Run(() => MirrorToVirtualMicrophone());
+		Changed?.Invoke();
+	}
+
+	// The virtual DualSense's microphone shows up in Windows a moment after the pad plugs in; tries for 10 s.
+	private void OnEmulationChanged() => Task.Run(async () =>
+	{
+		for (int attempt = 0; attempt < 20 && !MirrorToVirtualMicrophone(); attempt++)
+		{
+			await Task.Delay(TimeSpan.FromMilliseconds(500));
+		}
+	});
+
+	// Off the caller's thread: Windows' mute notification can't call back into its audio devices. False when the
+	// virtual microphone isn't there.
+	private bool MirrorToVirtualMicrophone()
+	{
+		lock (mirrorGate)
+		{
+			if (usbAudio != null && settings.Current.EffectiveLighting.MuteButtonMutesMic && mic.IsMuted is { } muted)
+			{
+				return usbAudio.SetVirtualMicrophoneMuted(muted);
+			}
+			return true;
+		}
+	}
 }

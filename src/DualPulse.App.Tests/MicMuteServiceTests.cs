@@ -18,6 +18,10 @@ public sealed class MicMuteServiceTests : IDisposable
 
 	private readonly FakeMicrophone mic = new();
 
+	private readonly VirtualMicMute virtualMic = new();
+
+	private readonly FakeEmulationService emulation = new();
+
 	private readonly ControllerService controller;
 
 	private readonly MicMuteService micMute;
@@ -27,7 +31,7 @@ public sealed class MicMuteServiceTests : IDisposable
 	public MicMuteServiceTests()
 	{
 		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
-		micMute = new MicMuteService(controller, settings, mic);
+		micMute = new MicMuteService(controller, settings, mic, usbAudio: virtualMic, emulation: emulation);
 	}
 
 	public void Dispose()
@@ -52,6 +56,86 @@ public sealed class MicMuteServiceTests : IDisposable
 		connection!.Feed(report);
 		TestReports.WaitUntil(() => connection.PendingReports == 0 && controller.Session!.Latest?.Buttons.HasFlag(Buttons.Mute) == mute);
 		Thread.Sleep(20);
+	}
+
+	[Fact]
+	public async Task Muting_FlagsTheVirtualMicrophoneMutedToo()
+	{
+		// Games record from the virtual DualSense's microphone; Windows should show that one muted as well.
+		await ConnectAsync();
+
+		Report(true);
+		Report(false);
+		TestReports.WaitUntil(() => virtualMic.Muted == true);
+
+		Report(true);
+		Report(false);
+		TestReports.WaitUntil(() => virtualMic.Muted == false);
+	}
+
+	[Fact]
+	public void MutedInWindows_FlagsTheVirtualMicrophoneToo()
+	{
+		mic.SetFromWindows(true);
+
+		TestReports.WaitUntil(() => virtualMic.Muted == true);
+	}
+
+	[Fact]
+	public void VirtualDualSensePluggedInLater_GetsTheCurrentMute()
+	{
+		mic.SetFromWindows(true);
+		TestReports.WaitUntil(() => virtualMic.Muted == true);
+		virtualMic.Muted = null;
+
+		emulation.RaiseStatusChanged();
+
+		TestReports.WaitUntil(() => virtualMic.Muted == true);
+	}
+
+	[Fact]
+	public void VirtualMicrophoneShowingUpAMomentAfterThePad_StillGetsTheMute()
+	{
+		mic.SetFromWindows(true);
+		TestReports.WaitUntil(() => virtualMic.Muted == true);
+		virtualMic.Muted = null;
+		virtualMic.MissingFor = 2;
+
+		emulation.RaiseStatusChanged();
+
+		TestReports.WaitUntil(() => virtualMic.Muted == true, timeoutMs: 5000);
+	}
+
+	[Fact]
+	public void WithTheSettingOff_TheVirtualMicrophoneIsLeftAlone()
+	{
+		settings.Update(s => s with { Lighting = new LightingSettings(MuteButtonMutesMic: false) });
+
+		mic.SetFromWindows(true);
+		Thread.Sleep(100);
+
+		Assert.Null(virtualMic.Muted);
+	}
+
+	private sealed class VirtualMicMute : DualPulse.Core.Audio.IControllerUsbAudio
+	{
+		public bool? Muted { get; set; }
+
+		public DualPulse.Core.Audio.IControllerAudioStream? Open() => null;
+
+		// How many more tries find no virtual microphone in Windows yet.
+		public int MissingFor { get; set; }
+
+		public bool SetVirtualMicrophoneMuted(bool muted)
+		{
+			if (MissingFor > 0)
+			{
+				MissingFor--;
+				return false;
+			}
+			Muted = muted;
+			return true;
+		}
 	}
 
 	[Fact]

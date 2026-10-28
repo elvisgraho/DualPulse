@@ -16,6 +16,9 @@ public interface IControllerUsbAudio
 	int? MicrophoneVolume() => null;
 
 	bool SetMicrophoneVolume(int percent) => false;
+
+	// Sets Windows' mute flag on the virtual DualSense's microphone; false when it isn't there.
+	bool SetVirtualMicrophoneMuted(bool muted) => false;
 }
 
 // Interleaved 16-bit stereo at 48 kHz from a microphone; raised on its capture thread.
