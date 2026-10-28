@@ -29,11 +29,11 @@ public sealed class ControllerView : Control
 		"L 290,190 C 260,186 240,184 200,184 C 160,184 140,186 110,190 L 94,216 C 82,236 70,251 50,254 C 24,258 4,236 8,196 " +
 		"L 16,104 C 22,72 38,50 70,44 C 100,38 150,40 200,40 Z");
 
-	// The dark centre panel holding the D-pad, face buttons and sticks; it rises along both sides of the touchpad.
+	// The dark centre panel: it drops from the touchpad (drawn over its top) between the grips and holds the sticks,
+	// PS and mute; the D-pad and face buttons sit on the shell.
 	private static readonly Geometry Core = Geometry.Parse(
-		"M 58,84 C 72,70 108,68 130,74 L 140,112 C 142,120 146,122 154,122 L 246,122 C 254,122 258,120 260,112 L 270,74 " +
-		"C 292,68 328,70 342,84 C 358,100 362,130 352,152 C 344,168 326,178 302,186 L 290,190 C 260,186 240,184 200,184 " +
-		"C 160,184 140,186 110,190 L 98,186 C 74,178 56,168 48,152 C 38,130 42,100 58,84 Z");
+		"M 131,60 L 269,60 C 284,78 294,100 295,128 C 296,156 295,174 290,190 C 260,186 240,184 200,184 " +
+		"C 160,184 140,186 110,190 C 105,174 104,156 105,128 C 106,100 116,78 131,60 Z");
 
 	// The touchpad, slightly narrower at the bottom; Touchpad is its box, for placing touch points.
 	private static readonly Geometry TouchpadShape = Geometry.Parse(
@@ -51,21 +51,24 @@ public sealed class ControllerView : Control
 
 	private static readonly Rect Plug = new(191, 24, 18, 17);
 
-	// Bumpers and triggers sit behind the shell's shoulders; only their tops show.
-	private static readonly Rect L1 = new(64, 30, 74, 26);
+	// The left bumper and trigger, following the shoulder's curve; the right ones are their mirror image. Both sit behind
+	// the shell, the trigger behind the bumper, so only their tops show.
+	private static readonly Geometry Bumper = Geometry.Parse(
+		"M 54,60 C 58,46 78,36 110,34 L 142,33 C 146,33 147,35 147,37 L 147,40 C 147,42 146,43 142,43 L 112,43 C 88,44 72,50 64,62 Z");
 
-	private static readonly Rect R1 = new(262, 30, 74, 26);
+	private static readonly Geometry Trigger = Geometry.Parse(
+		"M 68,48 C 68,27 82,14 102,14 L 122,14 C 137,14 145,24 145,38 L 145,48 Z");
 
-	private static readonly Rect L2 = new(70, 10, 64, 36);
+	// The trigger's pressure fill rises from behind the bumper to its top.
+	private const double TriggerBottom = 38;
 
-	private static readonly Rect R2 = new(266, 10, 64, 36);
+	private const double TriggerTop = 14;
 
-	// How much of a trigger shows above its bumper; the pressure fill rises through it.
-	private const double TriggerShows = 20;
+	private static readonly Matrix Mirror = Matrix.CreateScale(-1, 1) * Matrix.CreateTranslation(DesignWidth, 0);
 
-	private static readonly Point DpadCentre = new(88, 112);
+	private static readonly Point DpadCentre = new(72, 106);
 
-	private static readonly Point FaceCentre = new(312, 112);
+	private static readonly Point FaceCentre = new(328, 106);
 
 	private static readonly Point LeftStick = new(150, 154);
 
@@ -175,10 +178,13 @@ public sealed class ControllerView : Control
 			context.DrawRectangle(well, outline, new RoundedRect(Plug, 4));
 		}
 
-		DrawTrigger(context, L2, input.L2);
-		DrawTrigger(context, R2, input.R2);
-		DrawShoulder(context, L1, buttons.HasFlag(Buttons.L1));
-		DrawShoulder(context, R1, buttons.HasFlag(Buttons.R1));
+		DrawTrigger(context, input.L2);
+		DrawShoulder(context, buttons.HasFlag(Buttons.L1));
+		using (context.PushTransform(Mirror))
+		{
+			DrawTrigger(context, input.R2);
+			DrawShoulder(context, buttons.HasFlag(Buttons.R1));
+		}
 
 		DrawShell(context);
 		context.DrawGeometry(core, edge, Core);
@@ -264,25 +270,23 @@ public sealed class ControllerView : Control
 		}
 	}
 
-	private void DrawShoulder(DrawingContext context, Rect rect, bool pressed)
+	private void DrawShoulder(DrawingContext context, bool pressed)
 	{
-		context.DrawRectangle(pressed ? accent : part, pressed ? activeEdge : outline, new RoundedRect(rect, 10));
+		context.DrawGeometry(pressed ? accent : part, new Pen(pressed ? accent : outline.Brush, 1.2, lineJoin: PenLineJoin.Round), Bumper);
 	}
 
-	// The pressure fills the visible top of the trigger from its bumper upwards.
-	private void DrawTrigger(DrawingContext context, Rect rect, byte value)
+	private void DrawTrigger(DrawingContext context, byte value)
 	{
-		RoundedRect shape = new(rect, 12);
-		context.DrawRectangle(part, outline, shape);
+		context.DrawGeometry(part, new Pen(outline.Brush, 1.2, lineJoin: PenLineJoin.Round), Trigger);
 		double fill = ControllerLayout.TriggerFill(value);
 		if (fill > 0)
 		{
-			double top = rect.Y + TriggerShows * (1 - fill);
-			using (context.PushClip(shape))
+			double top = TriggerBottom - (TriggerBottom - TriggerTop) * fill;
+			using (context.PushGeometryClip(Trigger))
 			{
-				context.DrawRectangle(accent, null, new Rect(rect.X, top, rect.Width, rect.Bottom - top));
+				context.DrawRectangle(accent, null, new Rect(0, top, DesignWidth, 60 - top));
 			}
-			context.DrawRectangle(null, activeEdge, shape);
+			context.DrawGeometry(null, activeEdge, Trigger);
 		}
 	}
 
