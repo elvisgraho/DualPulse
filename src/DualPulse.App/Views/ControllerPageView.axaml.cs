@@ -8,4 +8,9 @@ public partial class ControllerPageView : UserControl
 	{
 		InitializeComponent();
 	}
+
+	private void OnRenameBackdropPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+	{
+		(DataContext as ViewModels.ControllerPageViewModel)?.CancelRenameCommand.Execute(null);
+	}
 }
