@@ -34,17 +34,26 @@ public sealed class ControllerView : Control
 
 	private static readonly Rect Touchpad = new(140, 52, 120, 62);
 
-	private static readonly Rect L1 = new(72, 30, 66, 10);
+	// Bumpers and triggers sit behind the shell's shoulders; only their tops show.
+	private static readonly Rect L1 = new(70, 32, 72, 26);
 
-	private static readonly Rect R1 = new(262, 30, 66, 10);
+	private static readonly Rect R1 = new(258, 32, 72, 26);
 
-	private static readonly Rect L2 = new(80, 8, 50, 12);
+	private static readonly Rect L2 = new(76, 12, 62, 36);
 
-	private static readonly Rect R2 = new(270, 8, 50, 12);
+	private static readonly Rect R2 = new(262, 12, 62, 36);
 
-	private static readonly Point DpadCentre = new(100, 105);
+	// How much of a trigger shows above its bumper; the pressure fill rises through it.
+	private const double TriggerShows = 20;
 
-	private static readonly Point FaceCentre = new(300, 105);
+	// The light strips run down each side of the touchpad and curve under its lower corners.
+	private static readonly Geometry LeftLight = Geometry.Parse("M 134,64 L 134,103 A 16,16 0 0 0 150,119 L 156,119");
+
+	private static readonly Geometry RightLight = Geometry.Parse("M 266,64 L 266,103 A 16,16 0 0 1 250,119 L 244,119");
+
+	private static readonly Point DpadCentre = new(95, 108);
+
+	private static readonly Point FaceCentre = new(305, 108);
 
 	private static readonly Point LeftStick = new(152, 150);
 
@@ -63,6 +72,8 @@ public sealed class ControllerView : Control
 	private IBrush touchpad = Brushes.Black;
 
 	private IBrush stickCap = Brushes.Gray;
+
+	private IBrush part = Brushes.Gray;
 
 	private IPen outline = new Pen(Brushes.Gray, 1.2);
 
@@ -109,6 +120,7 @@ public sealed class ControllerView : Control
 		Color background = ColourOf("Bg");
 		body = Vertical(Mix(raised, Colors.White, 0.09), Mix(raised, Colors.Black, 0.12));
 		well = Vertical(Mix(background, Colors.Black, 0.2), Mix(background, Colors.White, 0.04));
+		part = Vertical(Mix(raised, Colors.White, 0.06), Mix(raised, Colors.Black, 0.3));
 		touchpad = Vertical(Mix(raised, Colors.Black, 0.25), Mix(raised, Colors.Black, 0.45));
 		stickCap = new RadialGradientBrush
 		{
@@ -161,10 +173,10 @@ public sealed class ControllerView : Control
 
 		DrawDpad(context, buttons);
 
-		DrawFaceButton(context, FaceCentre + new Point(0, -18), buttons.HasFlag(Buttons.Triangle), FaceSymbol.Triangle);
-		DrawFaceButton(context, FaceCentre + new Point(18, 0), buttons.HasFlag(Buttons.Circle), FaceSymbol.Circle);
-		DrawFaceButton(context, FaceCentre + new Point(0, 18), buttons.HasFlag(Buttons.Cross), FaceSymbol.Cross);
-		DrawFaceButton(context, FaceCentre + new Point(-18, 0), buttons.HasFlag(Buttons.Square), FaceSymbol.Square);
+		DrawFaceButton(context, FaceCentre + new Point(0, -21), buttons.HasFlag(Buttons.Triangle), FaceSymbol.Triangle);
+		DrawFaceButton(context, FaceCentre + new Point(21, 0), buttons.HasFlag(Buttons.Circle), FaceSymbol.Circle);
+		DrawFaceButton(context, FaceCentre + new Point(0, 21), buttons.HasFlag(Buttons.Cross), FaceSymbol.Cross);
+		DrawFaceButton(context, FaceCentre + new Point(-21, 0), buttons.HasFlag(Buttons.Square), FaceSymbol.Square);
 
 		DrawStick(context, LeftStick, input.LeftX, input.LeftY, buttons.HasFlag(Buttons.L3));
 		DrawStick(context, RightStick, input.RightX, input.RightY, buttons.HasFlag(Buttons.R3));
@@ -215,35 +227,39 @@ public sealed class ControllerView : Control
 		}
 	}
 
-	// Two light strips along the lower corners of the touchpad, glowing in the lightbar colour.
+	// The light strips beside the touchpad, glowing in the lightbar colour.
 	private void DrawLightbar(DrawingContext context)
 	{
 		IBrush colour = Lightbar ?? accent;
 		Color glow = colour is ISolidColorBrush solid ? solid.Color : Colors.Goldenrod;
-		IBrush halo = new SolidColorBrush(Color.FromArgb(0x38, glow.R, glow.G, glow.B));
-		foreach (double x in new[] { 134.0, 263.0 })
+		IPen wideGlow = new Pen(new SolidColorBrush(Color.FromArgb(0x1C, glow.R, glow.G, glow.B)), 11, lineCap: PenLineCap.Round);
+		IPen nearGlow = new Pen(new SolidColorBrush(Color.FromArgb(0x48, glow.R, glow.G, glow.B)), 5.5, lineCap: PenLineCap.Round);
+		IPen light = new Pen(colour, 2.4, lineCap: PenLineCap.Round);
+		foreach (Geometry strip in new[] { LeftLight, RightLight })
 		{
-			Rect strip = new(x, 78, 3, 34);
-			context.DrawRectangle(halo, null, new RoundedRect(strip.Inflate(new Thickness(2.5, 2)), 4));
-			context.DrawRectangle(colour, null, new RoundedRect(strip, 1.5));
+			context.DrawGeometry(null, wideGlow, strip);
+			context.DrawGeometry(null, nearGlow, strip);
+			context.DrawGeometry(null, light, strip);
 		}
 	}
 
 	private void DrawShoulder(DrawingContext context, Rect rect, bool pressed)
 	{
-		context.DrawRectangle(pressed ? accent : body, pressed ? activeEdge : outline, new RoundedRect(rect, 5));
+		context.DrawRectangle(pressed ? accent : part, pressed ? activeEdge : outline, new RoundedRect(rect, 10));
 	}
 
+	// The pressure fills the visible top of the trigger from its bumper upwards.
 	private void DrawTrigger(DrawingContext context, Rect rect, byte value)
 	{
-		RoundedRect shape = new(rect, 5);
-		context.DrawRectangle(well, outline, shape);
+		RoundedRect shape = new(rect, 12);
+		context.DrawRectangle(part, outline, shape);
 		double fill = ControllerLayout.TriggerFill(value);
 		if (fill > 0)
 		{
+			double top = rect.Y + TriggerShows * (1 - fill);
 			using (context.PushClip(shape))
 			{
-				context.DrawRectangle(accent, null, rect.WithWidth(rect.Width * fill));
+				context.DrawRectangle(accent, null, new Rect(rect.X, top, rect.Width, rect.Bottom - top));
 			}
 			context.DrawRectangle(null, activeEdge, shape);
 		}
@@ -258,8 +274,8 @@ public sealed class ControllerView : Control
 	// One cross-shaped well; a pressed arm fills with the accent. Each arm has a small arrow.
 	private void DrawDpad(DrawingContext context, Buttons buttons)
 	{
-		const double reach = 24;
-		const double half = 7;
+		const double reach = 27;
+		const double half = 8.5;
 		Point c = DpadCentre;
 		StreamGeometry cross = new();
 		using (StreamGeometryContext g = cross.Open())
@@ -287,23 +303,23 @@ public sealed class ControllerView : Control
 		foreach ((Buttons button, Vector direction) in arms)
 		{
 			bool pressed = buttons.HasFlag(button);
-			Point mid = c + direction * 15.5;
+			Point mid = c + direction * (half + reach) / 2;
 			if (pressed)
 			{
 				Rect arm = direction.X == 0
-					? new Rect(c.X - half + 1, mid.Y - 7.5, 2 * half - 2, 15)
-					: new Rect(mid.X - 7.5, c.Y - half + 1, 15, 2 * half - 2);
+					? new Rect(c.X - half + 1, mid.Y - 8.5, 2 * half - 2, 17)
+					: new Rect(mid.X - 8.5, c.Y - half + 1, 17, 2 * half - 2);
 				context.DrawRectangle(accent, null, new RoundedRect(arm, 2));
 			}
 			// A small arrow pointing outwards.
 			Vector side = new(direction.Y, -direction.X);
-			Point tip = mid + direction * 3;
+			Point tip = mid + direction * 3.5;
 			StreamGeometry arrow = new();
 			using (StreamGeometryContext g = arrow.Open())
 			{
 				g.BeginFigure(tip, true);
-				g.LineTo(mid - direction * 1.5 + side * 3.2);
-				g.LineTo(mid - direction * 1.5 - side * 3.2);
+				g.LineTo(mid - direction * 2 + side * 3.8);
+				g.LineTo(mid - direction * 2 - side * 3.8);
 				g.EndFigure(true);
 			}
 			context.DrawGeometry(pressed ? pressedGlyph.Brush : glyph.Brush, null, arrow);
@@ -312,9 +328,9 @@ public sealed class ControllerView : Control
 
 	private void DrawFaceButton(DrawingContext context, Point centre, bool pressed, FaceSymbol symbol)
 	{
-		context.DrawEllipse(pressed ? accent : well, pressed ? activeEdge : edge, centre, 8.5, 8.5);
+		context.DrawEllipse(pressed ? accent : well, pressed ? activeEdge : edge, centre, 10, 10);
 		IPen pen = pressed ? pressedGlyph : glyph;
-		const double s = 3.6;
+		const double s = 4.3;
 		switch (symbol)
 		{
 			case FaceSymbol.Triangle:
@@ -344,14 +360,14 @@ public sealed class ControllerView : Control
 	// A recessed well with a domed cap that follows the stick; pressed (L3/R3) rings the cap with the accent.
 	private void DrawStick(DrawingContext context, Point centre, byte x, byte y, bool pressed)
 	{
-		context.DrawEllipse(well, edge, centre, 22, 22);
+		context.DrawEllipse(well, edge, centre, 24, 24);
 		Point cap = ControllerLayout.StickDot(x, y, centre, StickTravel);
 		using (context.PushTransform(Matrix.CreateTranslation(0, 2)))
 		{
-			context.DrawEllipse(new SolidColorBrush(Color.FromArgb(0x55, 0, 0, 0)), null, cap, 14, 14);
+			context.DrawEllipse(new SolidColorBrush(Color.FromArgb(0x55, 0, 0, 0)), null, cap, 15, 15);
 		}
-		context.DrawEllipse(stickCap, pressed ? activeEdge : outline, cap, 14, 14);
-		context.DrawEllipse(null, pressed ? activeEdge : new Pen(new SolidColorBrush(Color.FromArgb(0x50, 0, 0, 0)), 1.2), cap, 9.5, 9.5);
+		context.DrawEllipse(stickCap, pressed ? activeEdge : outline, cap, 15, 15);
+		context.DrawEllipse(null, pressed ? activeEdge : new Pen(new SolidColorBrush(Color.FromArgb(0x50, 0, 0, 0)), 1.2), cap, 10, 10);
 		if (!pressed && (x is < 118 or > 138 || y is < 118 or > 138))
 		{
 			context.DrawEllipse(accent, null, cap, 3, 3);
