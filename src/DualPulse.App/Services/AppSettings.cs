@@ -201,4 +201,5 @@ public sealed record AppSettings(
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AppSettings))]
+[JsonSerializable(typeof(ProfileFileData))]
 internal sealed partial class SettingsJsonContext : JsonSerializerContext;

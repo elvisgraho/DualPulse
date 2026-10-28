@@ -40,6 +40,16 @@
           <Button Content="Add game..." Command="{Binding StartAddGameCommand}" ToolTip.Tip="Make a profile for a game that is running now" />
           <Button Content="New profile..." Command="{Binding StartNewProfileCommand}" ToolTip.Tip="A profile you switch to by hand, on Home or in the tray" />
           <Button Content="Remove" Command="{Binding RemoveProfileCommand}" IsVisible="{Binding CanRemove}" />
+          <Button Content="⋯" ToolTip.Tip="Import or export a profile">
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Import profile..." Command="{Binding ImportProfileCommand}" />
+                <MenuItem Header="Export this profile..." Command="{Binding ExportProfileCommand}" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <TextBlock Classes="caption" VerticalAlignment="Center" Text="{Binding ProfileFileStatus}"
+                     IsVisible="{Binding ProfileFileStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <TextBlock Classes="caption" VerticalAlignment="Center" Margin="8,0,0,0" Text="● Active now" IsVisible="{Binding IsActiveNow}" />
       </StackPanel>
     </StackPanel>

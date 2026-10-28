@@ -31,12 +31,68 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	private readonly IRunningWindows? windows;
 
+	private readonly IFileDialogs? files;
+
+	// After Export or Import: what happened.
+	[ObservableProperty]
+	public partial string ProfileFileStatus { get; private set; } = "";
+
+	private bool CanExport() => files != null && selection?.Selected != null;
+
+	// Saves the selected profile to a file of its own.
+	[RelayCommand(CanExecute = nameof(CanExport))]
+	private async Task ExportProfile()
+	{
+		if (files == null || selection?.Selected is not { } profile || await files.PickSaveAsync(ProfileFile.FileName(profile)) is not { } path)
+		{
+			return;
+		}
+		try
+		{
+			await File.WriteAllTextAsync(path, ProfileFile.Write(profile));
+			ProfileFileStatus = "Saved.";
+		}
+		catch (Exception)
+		{
+			ProfileFileStatus = "Couldn't save the file.";
+		}
+	}
+
+	// Loads a profile file and selects it; one you already have comes in as a copy.
+	[RelayCommand]
+	private async Task ImportProfile()
+	{
+		if (files == null || settings == null || selection == null || await files.PickOpenAsync() is not { } path)
+		{
+			return;
+		}
+		string text;
+		try
+		{
+			text = await File.ReadAllTextAsync(path);
+		}
+		catch (Exception)
+		{
+			ProfileFileStatus = "Couldn't read the file.";
+			return;
+		}
+		if (ProfileFile.Read(text, settings.Current.EffectiveProfiles) is not { } imported)
+		{
+			ProfileFileStatus = "That file isn't a DualPulse profile.";
+			return;
+		}
+		settings.Update(s => s with { Profiles = [.. s.EffectiveProfiles, imported] });
+		selection.Select(imported);
+		ProfileFileStatus = $"Added {imported.Name}.";
+	}
+
 	private readonly UiContext ui = new();
 
 	public ControllerPageViewModel(LightingViewModel? lighting = null, TriggersViewModel? triggers = null, RumbleViewModel? rumble = null,
 		GyroViewModel? gyro = null, ProfileSelection? selection = null, ISettingsService? settings = null, IRunningWindows? windows = null,
-		AudioViewModel? audio = null, SticksViewModel? sticks = null, MicrophoneViewModel? microphone = null)
+		AudioViewModel? audio = null, SticksViewModel? sticks = null, MicrophoneViewModel? microphone = null, IFileDialogs? files = null)
 	{
+		this.files = files;
 		Microphone = microphone;
 		Sticks = sticks;
 		Audio = audio;
@@ -209,6 +265,7 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	private void RefreshProfiles()
 	{
+		ExportProfileCommand.NotifyCanExecuteChanged();
 		IReadOnlyList<GameProfile> games = settings?.Current.EffectiveProfiles ?? [];
 		IReadOnlyList<ProfileChoice> choices = [new("Default", null), .. games.Select(p => new ProfileChoice(p.Name, p.Exe))];
 		for (int i = 0; i < choices.Count; i++)

@@ -123,6 +123,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<AudioViewModel>();
 		builder.Services.AddSingleton<ModsViewModel>();
 		builder.Services.AddSingleton<MicrophoneViewModel>();
+		builder.Services.AddSingleton<IFileDialogs, Platform.FileDialogs>();
 		builder.Services.AddSingleton<ControllerPageViewModel>();
 		builder.Services.AddSingleton<MappingViewModel>();
 		builder.Services.AddSingleton(s => new EmulationViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IEmulationService>(),
