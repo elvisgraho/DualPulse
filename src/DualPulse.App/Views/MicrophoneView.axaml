@@ -15,7 +15,7 @@
       <Border Classes="card">
         <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="YOUR CONTROLLER'S MICROPHONE" />
-          <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding RealName}"
+          <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding RealName, StringFormat='In Windows: {0}'}"
                      IsVisible="{Binding RealName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <controls:Waveform Height="64" Peaks="{Binding RealPeaks}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding Status}" />
@@ -30,8 +30,8 @@
 
       <Border Classes="card" IsVisible="{Binding ShowVirtual}">
         <StackPanel Spacing="16">
-          <TextBlock Classes="caption" Text="WHAT GAMES HEAR" />
-          <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding VirtualName}"
+          <TextBlock Classes="caption" Text="IN GAMES" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding VirtualName, StringFormat='Pick {0} in games and voice chat.'}"
                      IsVisible="{Binding VirtualName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <controls:Waveform Height="64" Peaks="{Binding VirtualPeaks}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding VirtualStatus}" />

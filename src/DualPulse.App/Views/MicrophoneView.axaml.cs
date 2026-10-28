@@ -5,11 +5,11 @@ using DualPulse.App.ViewModels;
 
 namespace DualPulse.App.Views;
 
-// Refreshes the waveforms 20 times a second. The controller's microphone is only recorded while this page is on
+// Refreshes the waveforms 30 times a second. The controller's microphone is only recorded while this page is on
 // screen in a visible window (not while the app sits in the tray).
 public partial class MicrophoneView : UserControl
 {
-	private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+	private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
 
 	private bool running;
 

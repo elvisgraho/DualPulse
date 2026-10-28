@@ -39,6 +39,13 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		controller.Dispose();
 	}
 
+	// Device names and volume arrive from a background lookup.
+	private void RefreshUntil(Func<bool> condition) => TestReports.WaitUntil(() =>
+	{
+		page.Refresh();
+		return condition();
+	});
+
 	private async Task ConnectAsync(string path)
 	{
 		transport.Add(path);
@@ -75,8 +82,8 @@ public sealed class MicrophoneViewModelTests : IDisposable
 
 		page.Start();
 		page.Refresh();
-		microphones.Capture!.Feed(Enumerable.Repeat((short)16384, 2 * 1200).ToArray());
-		page.Refresh();
+		microphones.Capture!.Feed(Enumerable.Repeat((short)16384, 2 * 960).ToArray());
+		RefreshUntil(() => page.RealName != null);
 
 		Assert.Equal("Headset Microphone (8- DualSense Wireless Controller)", page.RealName);
 		Assert.Equal("Working.", page.Status);
@@ -129,6 +136,7 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		page.Start();
 		page.Refresh();
 
+		RefreshUntil(() => page.HasVolume);
 		Assert.Equal(65, page.Volume);
 		page.Volume = 80;
 
@@ -142,7 +150,7 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		Assert.False(page.ShowVirtual);
 
 		settings.Update(s => s with { Emulation = PadKind.DualSense });
-		page.Refresh();
+		RefreshUntil(() => page.VirtualName != null);
 
 		Assert.True(page.ShowVirtual);
 		Assert.Equal("Headset Microphone (7- DualSense Wireless Controller)", page.VirtualName);

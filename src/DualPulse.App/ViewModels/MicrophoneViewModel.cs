@@ -12,7 +12,8 @@ public sealed record MicLedChoice(string Label, MicLed MicLed);
 // The Microphone page: the controller's own microphone (its Windows name, the last seconds of sound, a status line and
 // its Windows input volume), what games hear through the virtual DualSense's microphone (DualSense mode only), and the
 // Mute button settings. The controller's microphone is only recorded while the page is shown (Start/Stop); Refresh
-// runs on a short timer from the view.
+// runs on a short timer from the view. Device names and volume are looked up in the background about once a second
+// (asking Windows for them takes long enough to stall the waveform).
 public sealed partial class MicrophoneViewModel : ObservableObject
 {
 	private static readonly TimeSpan SilentFor = TimeSpan.FromSeconds(1.5);
@@ -31,7 +32,9 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 
 	private readonly TimeProvider time;
 
-	private readonly PeakHistory levels = new();
+	private readonly PeakHistory levels = new(binsPerSecond: 50);
+
+	private Task<DeviceInfo>? deviceCheck;
 
 	private bool started;
 
@@ -137,22 +140,23 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 	{
 		ControllerSession? session = controller.Session;
 		bool onCable = session?.Transport == Transport.Usb;
-		if (lastDeviceCheck is not { } checkedAt || time.GetElapsedTime(checkedAt) >= DeviceCheckInterval)
+		if (deviceCheck is { IsCompleted: true } done)
+		{
+			deviceCheck = null;
+			if (done.IsCompletedSuccessfully)
+			{
+				Apply(done.Result);
+			}
+		}
+		if (deviceCheck == null && (lastDeviceCheck is not { } checkedAt || time.GetElapsedTime(checkedAt) >= DeviceCheckInterval))
 		{
 			lastDeviceCheck = time.GetTimestamp();
-			(string? real, string? virtualName) = usbAudio?.MicrophoneNames() ?? (null, null);
-			RealName = onCable ? real : null;
-			VirtualName = virtualName;
-			int? current = onCable ? usbAudio?.MicrophoneVolume() : null;
-			HasVolume = current != null;
-			if (current is { } percent && percent != volume)
+			IControllerUsbAudio? audio = usbAudio;
+			deviceCheck = Task.Run(() =>
 			{
-				volume = percent;
-				OnPropertyChanged(nameof(Volume));
-			}
-			OnPropertyChanged(nameof(MicHint));
-			OnPropertyChanged(nameof(MuteButtonMutesMic));
-			OnPropertyChanged(nameof(SelectedMicLed));
+				(string? real, string? virtualName) = audio?.MicrophoneNames() ?? (null, null);
+				return new DeviceInfo(onCable ? real : null, virtualName, onCable ? audio?.MicrophoneVolume() : null);
+			});
 		}
 		if (started && onCable)
 		{
@@ -179,6 +183,23 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		bool recording = monitor?.InUse == true;
 		VirtualStatus = recording ? "A game or app is recording from it." : "Not in use.";
 		VirtualPeaks = monitor?.Levels.Snapshot() ?? [];
+	}
+
+	private sealed record DeviceInfo(string? RealName, string? VirtualName, int? Volume);
+
+	private void Apply(DeviceInfo info)
+	{
+		RealName = info.RealName;
+		VirtualName = info.VirtualName;
+		HasVolume = info.Volume != null;
+		if (info.Volume is { } percent && percent != volume)
+		{
+			volume = percent;
+			OnPropertyChanged(nameof(Volume));
+		}
+		OnPropertyChanged(nameof(MicHint));
+		OnPropertyChanged(nameof(MuteButtonMutesMic));
+		OnPropertyChanged(nameof(SelectedMicLed));
 	}
 
 	private void OpenCapture()

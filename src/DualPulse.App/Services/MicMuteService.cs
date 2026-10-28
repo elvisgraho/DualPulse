@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using DualPulse.Core.Devices;
 using DualPulse.Core.Protocol;
 using DualPulse.Emulation;
@@ -30,8 +31,11 @@ public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposabl
 
 	private bool wasHeld;
 
-	public MicMuteService(IControllerService controller, ISettingsService settings, IMicrophone mic)
+	private readonly ILogger<MicMuteService>? logger;
+
+	public MicMuteService(IControllerService controller, ISettingsService settings, IMicrophone mic, ILogger<MicMuteService>? logger = null)
 	{
+		this.logger = logger;
 		this.controller = controller;
 		this.settings = settings;
 		this.mic = mic;
@@ -108,7 +112,14 @@ public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposabl
 		}
 		if (pressed && settings.Current.EffectiveLighting.MuteButtonMutesMic)
 		{
-			mic.Toggle();
+			if (mic.Toggle())
+			{
+				logger?.LogInformation("Mute button: microphone {State}", mic.IsMuted == true ? "muted" : "unmuted");
+			}
+			else
+			{
+				logger?.LogWarning("Mute button: the microphone's mute couldn't be changed (microphone found: {Found})", mic.IsMuted != null);
+			}
 		}
 	}
 

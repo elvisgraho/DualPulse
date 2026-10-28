@@ -485,6 +485,30 @@ if (args.Length >= 1 && args[0] == "mics")
 	// Lists the DualSense microphones (real or DualPulse's virtual one), their format and mute, and records 3 s from
 	// each: peak level and how evenly the blocks arrive.
 	using NAudio.CoreAudioApi.MMDeviceEnumerator enumerator = new();
+	foreach (NAudio.CoreAudioApi.Role role in new[] { NAudio.CoreAudioApi.Role.Console, NAudio.CoreAudioApi.Role.Communications })
+	{
+		using NAudio.CoreAudioApi.MMDevice defaultMic = enumerator.GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Capture, role);
+		Console.WriteLine($"Default recording device ({role}): {defaultMic.FriendlyName}, muted={defaultMic.AudioEndpointVolume.Mute}");
+	}
+	if (args.Length >= 2 && args[1] == "names")
+	{
+		return 0;
+	}
+	// "mics mute": the same measurement with the default recording device muted (unmuted again afterwards).
+	using NAudio.CoreAudioApi.MMDevice muteTarget = enumerator.GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.Role.Console);
+	bool muteTest = args.Length >= 2 && args[1] == "mute";
+	if (muteTest)
+	{
+		muteTarget.AudioEndpointVolume.Mute = true;
+		Console.WriteLine($"Muted {muteTarget.FriendlyName} for the measurement");
+	}
+	using var unmute = new DisposeAction(() =>
+	{
+		if (muteTest)
+		{
+			muteTarget.AudioEndpointVolume.Mute = false;
+		}
+	});
 	foreach (NAudio.CoreAudioApi.MMDevice device in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
 	{
 		if (!device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
@@ -1216,4 +1240,9 @@ internal static class XInput
 
 		public short ThumbRY;
 	}
+}
+
+sealed class DisposeAction(Action action) : IDisposable
+{
+	public void Dispose() => action();
 }
