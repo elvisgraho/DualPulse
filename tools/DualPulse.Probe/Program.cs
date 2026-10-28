@@ -480,6 +480,130 @@ if (args.Length >= 1 && args[0] == "audio-devices")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "mic-vs-output")
+{
+	// Records what Windows plays (default output, loopback) and the real controller microphone for 5 s at the same
+	// time and lines them up: how alike they are and at what delay (through the air: a few ms; a leak: none).
+	List<float> played = [], heard = [];
+	using DualPulse.Emulation.WasapiLoopbackSource loopback = new();
+	loopback.Blocks += samples => { lock (played) { for (int i = 0; i + 1 < samples.Length; i += 2) { played.Add((samples[i] + samples[i + 1]) / 2); } } };
+	DualPulse.Emulation.WindowsControllerUsbAudio audio = new();
+	if (!loopback.Start())
+	{
+		Console.Error.WriteLine("No output to capture.");
+		return 1;
+	}
+	using (IDisposable? mic = audio.OpenMicrophone(stereo => { lock (heard) { for (int i = 0; i + 1 < stereo.Length; i += 2) { heard.Add((stereo[i] + stereo[i + 1]) / 65536f); } } }))
+	{
+		if (mic == null)
+		{
+			Console.Error.WriteLine("No controller microphone.");
+			return 1;
+		}
+		Thread.Sleep(5000);
+	}
+	loopback.Stop();
+	static double Level(List<float> x) => 10 * Math.Log10(x.Sum(v => (double)v * v) / Math.Max(1, x.Count) + 1e-12);
+	Console.WriteLine($"output {played.Count / 48000.0:0.00} s at {Level(played):0.0} dBFS (loopback {loopback.SampleRate} Hz), microphone {heard.Count / 48000.0:0.00} s at {Level(heard):0.0} dBFS");
+	// Normalised cross-correlation over lags 0-200 ms (microphone later than the output), on the middle 3 s.
+	int start = 48000, length = Math.Min(3 * 48000, Math.Min(played.Count, heard.Count) - start - 9600);
+	if (length <= 0)
+	{
+		return 0;
+	}
+	double best = 0;
+	int bestLag = 0;
+	for (int lag = -480; lag <= 9600; lag += 4)
+	{
+		double dot = 0, a = 0, b = 0;
+		for (int i = start; i < start + length; i += 2)
+		{
+			double x = played[i], y = heard[i + lag];
+			dot += x * y;
+			a += x * x;
+			b += y * y;
+		}
+		double r = Math.Abs(dot) / Math.Sqrt(a * b + 1e-18);
+		if (r > best)
+		{
+			best = r;
+			bestLag = lag;
+		}
+	}
+	Console.WriteLine($"best match {best:0.00} (1 = identical) with the microphone {bestLag / 48.0:0.0} ms later");
+	return 0;
+}
+if (args.Length >= 1 && args[0] == "mic-gate")
+{
+	// Records the controller's microphone for 8 s through the noise gate: how much of the time it was open.
+	DualPulse.Core.Audio.MicrophoneProcessor gate = new() { NoiseGate = true };
+	int frames = 0, openFrames = 0;
+	DualPulse.Emulation.WindowsControllerUsbAudio audio = new();
+	using (IDisposable? mic = audio.OpenMicrophone(stereo => gate.Process(stereo, output =>
+	{
+		for (int i = 0; i + 1 < output.Length; i += 2)
+		{
+			frames++;
+			openFrames += output[i] != 0 ? 1 : 0;
+		}
+	})))
+	{
+		if (mic == null)
+		{
+			Console.Error.WriteLine("No controller microphone.");
+			return 1;
+		}
+		Thread.Sleep(8000);
+	}
+	Console.WriteLine($"{frames / 48000.0:0.0} s, gate open about {openFrames * 100.0 / Math.Max(1, frames):0.0}% of the time");
+	return 0;
+}
+if (args.Length >= 1 && args[0] == "mic-gaps")
+{
+	// Records 5 s from each DualSense microphone and counts stretches of exact silence (inserted, not recorded: a real
+	// microphone always has a little noise), plus the level.
+	using NAudio.CoreAudioApi.MMDeviceEnumerator enumerator = new();
+	foreach (NAudio.CoreAudioApi.MMDevice device in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
+	{
+		if (!device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+		{
+			continue;
+		}
+		using NAudio.CoreAudioApi.WasapiCapture capture = new(device, true, 10);
+		List<float> left = [];
+		int channels = capture.WaveFormat.Channels;
+		capture.DataAvailable += (_, e) =>
+		{
+			ReadOnlySpan<float> samples = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(e.Buffer.AsSpan(0, e.BytesRecorded));
+			for (int i = 0; i + channels <= samples.Length; i += channels)
+			{
+				left.Add(samples[i]);
+			}
+		};
+		capture.StartRecording();
+		Thread.Sleep(5000);
+		capture.StopRecording();
+		int gaps = 0, run = 0, zeroFrames = 0;
+		double sum = 0;
+		foreach (float sample in left)
+		{
+			sum += sample * sample;
+			if (sample == 0)
+			{
+				run++;
+				zeroFrames++;
+			}
+			else
+			{
+				gaps += run >= 48 ? 1 : 0;
+				run = 0;
+			}
+		}
+		gaps += run >= 48 ? 1 : 0;
+		Console.WriteLine($"{device.FriendlyName} ({(DualPulse.Emulation.WindowsControllerUsbAudio.IsVirtual(device) ? "virtual" : "real")}): {left.Count / 48000.0:0.00} s, level {10 * Math.Log10(sum / Math.Max(1, left.Count) + 1e-12):0.0} dBFS, {gaps} silent gaps of 1 ms or more, {zeroFrames * 100.0 / Math.Max(1, left.Count):0.0}% exact silence");
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "mic-sessions")
 {
 	// Which processes are recording from the DualSense microphones right now (active capture sessions).
@@ -536,6 +660,18 @@ if (args.Length >= 1 && args[0] == "mics")
 	{
 		using NAudio.CoreAudioApi.MMDevice defaultMic = enumerator.GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Capture, role);
 		Console.WriteLine($"Default recording device ({role}): {defaultMic.FriendlyName}, muted={defaultMic.AudioEndpointVolume.Mute}");
+	}
+	foreach (NAudio.CoreAudioApi.Role role in new[] { NAudio.CoreAudioApi.Role.Multimedia, NAudio.CoreAudioApi.Role.Communications })
+	{
+		using NAudio.CoreAudioApi.MMDevice output = enumerator.GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Render, role);
+		Console.WriteLine($"Default playback device ({role}): {output.FriendlyName}");
+	}
+	foreach (NAudio.CoreAudioApi.MMDevice render in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Render, NAudio.CoreAudioApi.DeviceState.Active))
+	{
+		if (render.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+		{
+			Console.WriteLine($"  {render.FriendlyName} ({(DualPulse.Emulation.WindowsControllerUsbAudio.IsVirtual(render) ? "virtual" : "real")}): peak now {render.AudioMeterInformation.MasterPeakValue:0.000}, volume {render.AudioEndpointVolume.MasterVolumeLevelScalar:0.00}");
+		}
 	}
 	if (args.Length >= 2 && args[1] == "names")
 	{

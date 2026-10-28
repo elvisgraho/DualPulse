@@ -183,13 +183,15 @@ public sealed class MicrophoneViewModelTests : IDisposable
 	}
 
 	[Fact]
-	public void Boost_StartsAtZero_AndPersists()
+	public void GateOnAndNoBoost_ByDefault_AndBothPersist()
 	{
+		Assert.True(page.NoiseGate);
 		Assert.Equal(0, page.BoostDb);
 
+		page.NoiseGate = false;
 		page.BoostDb = 9;
 
-		Assert.Equal(new MicrophoneSettings(BoostDb: 9), settings.Current.EffectiveMicrophone);
+		Assert.Equal(new MicrophoneSettings(BoostDb: 9, NoiseGate: false), settings.Current.EffectiveMicrophone);
 	}
 
 	[Fact]

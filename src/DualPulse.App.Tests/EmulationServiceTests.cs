@@ -418,6 +418,8 @@ public sealed class EmulationServiceTests : IDisposable
 	[Fact]
 	public async Task OnUsb_RecordingFromTheVirtualMicrophone_UsesTheControllersOwn()
 	{
+		// Ungated, to see the route itself (the gate is on by default and delays the sound).
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseGate: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 
 		pad.SetMicrophoneOpen(true);
@@ -430,6 +432,8 @@ public sealed class EmulationServiceTests : IDisposable
 	[Fact]
 	public async Task OnUsb_Recording_ShowsInTheMonitor_WithWhatTheGameGets()
 	{
+		// Ungated, to see the route itself (the gate is on by default and delays the sound).
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseGate: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 		Assert.False(microphoneMonitor.InUse);
 
@@ -447,7 +451,7 @@ public sealed class EmulationServiceTests : IDisposable
 	[Fact]
 	public async Task OnUsb_GamesHearTheMicrophoneBoosted_AsSet()
 	{
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(BoostDb: 6) });
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(BoostDb: 6, NoiseGate: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 		pad.SetMicrophoneOpen(true);
 		TestReports.WaitUntil(() => usbAudio.Microphone != null);
@@ -456,6 +460,20 @@ public sealed class EmulationServiceTests : IDisposable
 
 		Assert.Equal(8, pad.MicrophoneWritten.Count);
 		Assert.All(pad.MicrophoneWritten, s => Assert.InRange(s, 1990, 2000));
+	}
+
+	[Fact]
+	public async Task OnUsb_TheNoiseGate_IsOnByDefault()
+	{
+		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
+		pad.SetMicrophoneOpen(true);
+		TestReports.WaitUntil(() => usbAudio.Microphone != null);
+
+		// A short burst of quiet sound: the gate keeps it out.
+		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)30, 2 * 480).ToArray());
+
+		Assert.Equal(2 * 480, pad.MicrophoneWritten.Count);
+		Assert.All(pad.MicrophoneWritten, s => Assert.Equal(0, s));
 	}
 
 	[Fact]
