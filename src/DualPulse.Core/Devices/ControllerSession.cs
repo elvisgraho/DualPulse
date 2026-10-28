@@ -86,8 +86,12 @@ public sealed class ControllerSession : IDisposable
 		this.logger = logger;
 		this.time = time ?? TimeProvider.System;
 		Transport = ControllerDiscovery.IsBluetooth(device.Path) ? Transport.Bluetooth : Transport.Usb;
-		Activity = new InputActivityTracker(this.time.GetUtcNow().UtcDateTime);
+		ConnectedAtUtc = this.time.GetUtcNow().UtcDateTime;
+		Activity = new InputActivityTracker(ConnectedAtUtc);
 	}
+
+	// When this connection began (shown as "connected for").
+	public DateTime ConnectedAtUtc { get; }
 
 	public HidDeviceInfo Device { get; }
 
@@ -142,6 +146,11 @@ public sealed class ControllerSession : IDisposable
 		{
 			settleTimer?.Dispose();
 			return;
+		}
+		// Right after a Bluetooth power-on the firmware report can fail; try again while settling.
+		if (Firmware == null && connection != null && DualSenseProductIds.Contains(Device.ProductId))
+		{
+			ReadFirmware(connection);
 		}
 		lock (outputGate)
 		{

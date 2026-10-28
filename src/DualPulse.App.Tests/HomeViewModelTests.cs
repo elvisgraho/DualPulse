@@ -29,7 +29,7 @@ public sealed class HomeViewModelTests : IDisposable
 	public HomeViewModelTests()
 	{
 		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
-		home = new HomeViewModel(controller, emulation, settings, power);
+		home = new HomeViewModel(controller, emulation, settings, power, time: time);
 	}
 
 	public void Dispose()
@@ -80,6 +80,19 @@ public sealed class HomeViewModelTests : IDisposable
 		Assert.Equal("DualPulse - 60% (charging)", home.TrayToolTip);
 		Assert.True(home.PowerOffCommand.CanExecute(null));
 		Assert.NotNull(home.Snapshot);
+	}
+
+	[Fact]
+	public async Task Home_Summary_ShowsFirmwareAndConnectedTime()
+	{
+		home.Refresh();
+		Assert.Equal("", home.DeviceSummary);
+
+		await ConnectAsync(FakeHidTransport.UsbPath);
+		time.Advance(TimeSpan.FromMinutes(72));
+		home.Refresh();
+
+		Assert.Equal("Firmware 06.30 · Connected for 1 h 12 min", home.DeviceSummary);
 	}
 
 	[Fact]

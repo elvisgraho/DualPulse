@@ -21,6 +21,13 @@ public sealed partial class HomeViewModel : ObservableObject
 
 	private readonly IPowerService power;
 
+	private readonly TimeProvider time;
+
+	private readonly Func<DeviceInfoViewModel>? deviceInfo;
+
+	// The device info window's view model (null when the app has none to offer, e.g. in tests).
+	public DeviceInfoViewModel? CreateDeviceInfo() => deviceInfo?.Invoke();
+
 	private readonly IPcControlService? pcControl;
 
 	private readonly UiContext ui = new();
@@ -35,8 +42,10 @@ public sealed partial class HomeViewModel : ObservableObject
 	private readonly object sampleGate = new();
 
 	public HomeViewModel(IControllerService controller, IEmulationService emulation, ISettingsService settings, IPowerService power,
-		IPcControlService? pcControl = null)
+		IPcControlService? pcControl = null, TimeProvider? time = null, Func<DeviceInfoViewModel>? deviceInfo = null)
 	{
+		this.time = time ?? TimeProvider.System;
+		this.deviceInfo = deviceInfo;
 		this.pcControl = pcControl;
 		if (pcControl != null)
 		{
@@ -125,6 +134,10 @@ public sealed partial class HomeViewModel : ObservableObject
 	[ObservableProperty]
 	public partial bool IsCharging { get; private set; }
 
+	// Under the controller picture: firmware and how long it has been connected.
+	[ObservableProperty]
+	public partial string DeviceSummary { get; private set; } = "";
+
 	[ObservableProperty]
 	public partial string FirmwareText { get; private set; } = "";
 
@@ -177,6 +190,7 @@ public sealed partial class HomeViewModel : ObservableObject
 			BatteryPercent = 0;
 			IsCharging = false;
 			FirmwareText = "";
+			DeviceSummary = "";
 			TrayToolTip = "DualPulse - not connected";
 			TrayStatus = ConnectionText;
 			Snapshot = null;
@@ -189,6 +203,8 @@ public sealed partial class HomeViewModel : ObservableObject
 			BatteryPercent = battery.Level;
 			IsCharging = battery.IsCharging;
 			FirmwareText = session.Firmware is { } firmware ? "Firmware " + firmware.UpdateVersionText : "";
+			string connected = "Connected for " + DeviceInfoViewModel.Duration(time.GetUtcNow().UtcDateTime - session.ConnectedAtUtc);
+			DeviceSummary = FirmwareText == "" ? connected : FirmwareText + " · " + connected;
 			TrayToolTip = BatteryNotifier.TooltipText(battery.Level, battery.State);
 			TrayStatus = $"{transport} · {battery.Level}%{(battery.IsCharging ? " (charging)" : "")}";
 		}

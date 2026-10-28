@@ -9,7 +9,7 @@
   <Grid ColumnDefinitions="3*,24,2*">
     <!-- Live controller -->
     <Border Grid.Column="0" Classes="card">
-      <Grid RowDefinitions="Auto,*">
+      <Grid RowDefinitions="Auto,*,Auto">
         <TextBlock Classes="subtitle" Text="Controller" />
         <controls:ControllerView Grid.Row="1" Margin="0,16,0,0" Snapshot="{Binding Snapshot}" Cabled="{Binding IsCabled}"
                                  Opacity="{Binding IsConnected, Converter={x:Static views:Converters.ConnectedOpacity}}">
@@ -19,6 +19,10 @@
             </Transitions>
           </controls:ControllerView.Transitions>
         </controls:ControllerView>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0" IsVisible="{Binding IsConnected}">
+          <TextBlock Classes="secondary" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding DeviceSummary}" />
+          <Button Grid.Column="1" Content="Details" Click="OnDetails" />
+        </Grid>
       </Grid>
     </Border>
 
@@ -50,13 +54,6 @@
           <StackPanel Spacing="4">
             <TextBlock Classes="caption" Text="EMULATION" />
             <TextBlock Classes="subtitle" Text="{Binding EmulationText}" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card status" IsVisible="{Binding IsConnected}">
-          <StackPanel Spacing="4">
-            <TextBlock Classes="caption" Text="DEVICE" />
-            <TextBlock Classes="subtitle" Text="{Binding FirmwareText}" />
           </StackPanel>
         </Border>
 

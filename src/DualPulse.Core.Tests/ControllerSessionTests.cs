@@ -68,6 +68,23 @@ public sealed class ControllerSessionTests : IDisposable
 	}
 
 	[Fact]
+	public void Session_FirmwareUnreadableAtFirst_ReadsItWhileSettling()
+	{
+		FakeDevice device = transport.Add(FakeHidTransport.BluetoothPath);
+		device.FirmwareReport = null;
+
+		ControllerSession s = StartSession(device);
+		Assert.Null(s.Firmware);
+
+		device.FirmwareReport = TestReports.Firmware0630;
+		time.Advance(TimeSpan.FromMilliseconds(500));
+
+		TestReports.WaitUntil(() => s.Firmware != null);
+		Assert.Equal((ushort)0x0630, s.Firmware!.UpdateVersion);
+		Assert.True(s.Output.ImprovedRumble);
+	}
+
+	[Fact]
 	public void Session_Apply_CoalescesToNewestReport()
 	{
 		FakeDevice device = transport.Add(FakeHidTransport.BluetoothPath);
