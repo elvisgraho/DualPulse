@@ -23,17 +23,23 @@ if (args.Length >= 1 && args[0] == "xinput-watch")
 	// What games read from the first XInput pad: each change in buttons and triggers, for 15 s (or the given seconds).
 	int seconds = args.Length >= 2 ? int.Parse(args[1]) : 15;
 	(ushort Buttons, byte Left, byte Right)? last = null;
+	(short LX, short LY, short RX, short RY) lastSticks = default;
 	System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
 	while (clock.Elapsed.TotalSeconds < seconds)
 	{
 		if (XInput.XInputGetState(0, out XInput.State state) == 0)
 		{
 			var now = (state.Buttons, state.LeftTrigger, state.RightTrigger);
-			if (now != last)
+			var sticks = (state.ThumbLX, state.ThumbLY, state.ThumbRX, state.ThumbRY);
+			// Sticks are printed when one moves by more than 1% of its range, so a resting stick's noise shows too.
+			bool sticksMoved = Math.Abs(sticks.ThumbLX - lastSticks.LX) > 650 || Math.Abs(sticks.ThumbLY - lastSticks.LY) > 650
+				|| Math.Abs(sticks.ThumbRX - lastSticks.RX) > 650 || Math.Abs(sticks.ThumbRY - lastSticks.RY) > 650;
+			if (now != last || sticksMoved)
 			{
+				lastSticks = sticks;
 				string[] names = ["Up", "Down", "Left", "Right", "Start", "Back", "LS", "RS", "LB", "RB", "", "", "A", "B", "X", "Y"];
 				string held = string.Join(" ", names.Where((name, bit) => name != "" && (state.Buttons & (1 << bit)) != 0));
-				Console.WriteLine($"{clock.Elapsed.TotalSeconds,6:0.00}s  LT {state.LeftTrigger,3}  RT {state.RightTrigger,3}  buttons: {(held == "" ? "-" : held)}");
+				Console.WriteLine($"{clock.Elapsed.TotalSeconds,6:0.00}s  LT {state.LeftTrigger,3}  RT {state.RightTrigger,3}  buttons: {(held == "" ? "-" : held),-8}  L ({state.ThumbLX,6},{state.ThumbLY,6})  R ({state.ThumbRX,6},{state.ThumbRY,6})");
 				last = now;
 			}
 		}
