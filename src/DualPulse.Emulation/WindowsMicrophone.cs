@@ -11,6 +11,9 @@ public interface IMicrophone
 	// Flips the mute state; false when there is no recording device.
 	bool Toggle();
 
+	// Why the last read or toggle failed, for the log; null when it worked.
+	string? LastError => null;
+
 	// Raised when the mute state changes, from any source (Windows, another app, a headset button).
 	event Action? Changed;
 }
@@ -45,6 +48,8 @@ public sealed class WindowsMicrophone : IMicrophone, IDisposable
 
 	public bool? IsMuted { get; private set; }
 
+	public string? LastError { get; private set; }
+
 	public event Action? Changed;
 
 	public bool Toggle()
@@ -62,8 +67,9 @@ public sealed class WindowsMicrophone : IMicrophone, IDisposable
 					IsMuted = !muted;
 					toggled = true;
 				}
-				catch (Exception)
+				catch (Exception error)
 				{
+					LastError = error.Message;
 					Release();
 				}
 			}
@@ -85,7 +91,9 @@ public sealed class WindowsMicrophone : IMicrophone, IDisposable
 	{
 		try
 		{
-			IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+			// Created by class id and used through its interface only: Windows shares one enumerator object per process, and
+			// once NAudio has wrapped it, casting it to a class of our own fails.
+			IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)Activator.CreateInstance(EnumeratorType)!;
 			try
 			{
 				if (enumerator.GetDefaultAudioEndpoint(ECapture, EConsole, out IMMDevice device) != 0)
@@ -112,9 +120,11 @@ public sealed class WindowsMicrophone : IMicrophone, IDisposable
 			}
 			Marshal.ThrowExceptionForHR(volume!.GetMute(out bool muted));
 			IsMuted = muted;
+			LastError = null;
 		}
-		catch (Exception)
+		catch (Exception error)
 		{
+			LastError = $"{error.GetType().Name}: {error.Message}";
 			Release();
 			IsMuted = null;
 		}
@@ -168,8 +178,7 @@ public sealed class WindowsMicrophone : IMicrophone, IDisposable
 		}
 	}
 
-	[ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-	private class MMDeviceEnumerator;
+	private static readonly Type EnumeratorType = Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E"), throwOnError: true)!;
 
 	[ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 	private interface IMMDeviceEnumerator

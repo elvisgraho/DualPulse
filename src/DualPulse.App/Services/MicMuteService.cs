@@ -118,7 +118,7 @@ public sealed class MicMuteService : IMicMuteService, IHostedService, IDisposabl
 			}
 			else
 			{
-				logger?.LogWarning("Mute button: the microphone's mute couldn't be changed (microphone found: {Found})", mic.IsMuted != null);
+				logger?.LogWarning("Mute button: the microphone's mute couldn't be changed (microphone found: {Found}; {Error})", mic.IsMuted != null, mic.LastError);
 			}
 		}
 	}

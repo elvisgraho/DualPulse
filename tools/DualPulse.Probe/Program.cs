@@ -480,6 +480,28 @@ if (args.Length >= 1 && args[0] == "audio-devices")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "mic-threads")
+{
+	// As in the app: the microphone is created on a UI (STA) thread, the Mute button toggles it from the controller's
+	// read thread. Toggles twice, so the mute ends as it was.
+	// The app's other audio code has asked NAudio for Windows' device enumerator first.
+	using NAudio.CoreAudioApi.MMDeviceEnumerator first = new();
+	_ = first.GetDefaultAudioEndpoint(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.Role.Console);
+	DualPulse.Emulation.WindowsMicrophone? mic = null;
+	Thread ui = new(() => mic = new DualPulse.Emulation.WindowsMicrophone());
+	ui.SetApartmentState(ApartmentState.STA);
+	ui.Start();
+	ui.Join();
+	Console.WriteLine($"created on STA: muted={mic!.IsMuted?.ToString() ?? "(none)"}");
+	for (int i = 0; i < 2; i++)
+	{
+		Thread reader = new(() => Console.WriteLine($"toggle from read thread: {mic.Toggle()}, muted={mic.IsMuted?.ToString() ?? "(none)"}, error={mic.LastError ?? "-"}"));
+		reader.Start();
+		reader.Join();
+		Thread.Sleep(300);
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "mics")
 {
 	// Lists the DualSense microphones (real or DualPulse's virtual one), their format and mute, and records 3 s from
