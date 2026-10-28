@@ -39,13 +39,14 @@
           </ComboBox>
           <Button Content="Add game..." Command="{Binding StartAddGameCommand}" ToolTip.Tip="Make a profile for a game that is running now" />
           <Button Content="New profile..." Command="{Binding StartNewProfileCommand}" ToolTip.Tip="A profile you switch to by hand, on Home or in the tray" />
-          <Button Content="Remove" Command="{Binding RemoveProfileCommand}" IsVisible="{Binding CanRemove}" />
-          <Button Content="⋯" ToolTip.Tip="Import or export a profile">
+          <!-- On Default only Import applies; the rest show while a profile is selected. -->
+          <Button Content="⋯" ToolTip.Tip="More">
             <Button.Flyout>
               <MenuFlyout>
-                <MenuItem Header="Import profile..." Command="{Binding ImportProfileCommand}" />
-                <MenuItem Header="Rename this profile..." Command="{Binding StartRenameProfileCommand}" />
-                <MenuItem Header="Export this profile..." Command="{Binding ExportProfileCommand}" />
+                <MenuItem Header="Rename..." Command="{Binding StartRenameProfileCommand}" IsVisible="{Binding CanRemove}" />
+                <MenuItem Header="Export..." Command="{Binding ExportProfileCommand}" IsVisible="{Binding CanRemove}" />
+                <MenuItem Header="Import..." Command="{Binding ImportProfileCommand}" />
+                <MenuItem Header="Remove" Command="{Binding RemoveProfileCommand}" IsVisible="{Binding CanRemove}" />
               </MenuFlyout>
             </Button.Flyout>
           </Button>
