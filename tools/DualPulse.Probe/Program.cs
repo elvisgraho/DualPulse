@@ -1038,6 +1038,22 @@ int XInputRumble()
 		{
 			continue;
 		}
+		if (args.Length >= 2)
+		{
+			// "xinput-rumble 10 25 50": both motors at each percent for 2 s, a 2 s pause between, as soft game rumble.
+			foreach (string percent in args.Skip(1))
+			{
+				ushort level = (ushort)(int.Parse(percent) * 65535 / 100);
+				Console.WriteLine($"XInput pad {user}: both motors at {percent}%");
+				XInput.Vibration both = new() { Left = level, Right = level };
+				XInput.XInputSetState(user, ref both);
+				Thread.Sleep(2000);
+				XInput.Vibration quiet = new();
+				XInput.XInputSetState(user, ref quiet);
+				Thread.Sleep(2000);
+			}
+			return 0;
+		}
 		Console.WriteLine($"XInput pad {user}: left (large) motor");
 		XInput.Vibration left = new() { Left = 50000 };
 		XInput.XInputSetState(user, ref left);
