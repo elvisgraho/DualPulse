@@ -3,6 +3,23 @@
              xmlns:vm="using:DualPulse.App.ViewModels"
              x:Class="DualPulse.App.Views.EmulationView"
              x:DataType="vm:EmulationViewModel">
+  <UserControl.Styles>
+    <!-- PlayStation button symbols, drawn: the text characters look uneven between fonts. -->
+    <Style Selector="Path.button-symbol">
+      <Setter Property="Width" Value="12" />
+      <Setter Property="Height" Value="12" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="StrokeThickness" Value="1.6" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.button-letter">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,5,0" />
+    </Style>
+  </UserControl.Styles>
   <ScrollViewer>
     <!-- Content fills the width up to 720 px and stays left-aligned. -->
     <Grid>
@@ -38,6 +55,25 @@
           </Grid>
           <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowDualSenseHint}"
                      Text="Works best with Hide my DualSense on." />
+          <WrapPanel IsVisible="{Binding ShowXboxButtonTip}" ItemSpacing="16" LineSpacing="4">
+            <TextBlock Classes="caption" VerticalAlignment="Center" Text="Games show Xbox buttons:" />
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Classes="caption button-letter" Text="A" />
+              <Path Classes="button-symbol" Stroke="#7FA8E8" Data="M2.5,2.5 L9.5,9.5 M9.5,2.5 L2.5,9.5" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Classes="caption button-letter" Text="B" />
+              <Path Classes="button-symbol" Stroke="#F0707A" Data="M1.5,6 A4.5,4.5 0 1 1 10.5,6 A4.5,4.5 0 1 1 1.5,6 Z" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Classes="caption button-letter" Text="X" />
+              <Path Classes="button-symbol" Stroke="#E28FC6" Data="M2,2 H10 V10 H2 Z" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Classes="caption button-letter" Text="Y" />
+              <Path Classes="button-symbol" Stroke="#4FC9A3" Data="M6,1.5 L10.8,10 H1.2 Z" />
+            </StackPanel>
+          </WrapPanel>
           <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
             <StackPanel Spacing="2">
               <TextBlock Text="Game sound on the controller speaker" />

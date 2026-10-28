@@ -48,6 +48,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 		{
 			OnPropertyChanged(nameof(SelectedEmulation));
 			OnPropertyChanged(nameof(ShowDualSenseHint));
+			OnPropertyChanged(nameof(ShowXboxButtonTip));
 			OnPropertyChanged(nameof(ModePoints));
 			OnPropertyChanged(nameof(ShowViGEmBus));
 			OnPropertyChanged(nameof(ShowUsbIp));
@@ -146,6 +147,9 @@ public sealed partial class EmulationViewModel : ObservableObject
 
 	// The virtual DualSense needs usbip-win2; the page says so while it is chosen.
 	public bool ShowDualSenseHint => settings.Current.Emulation == PadKind.DualSense;
+
+	// Games then show Xbox letters, which sit on other buttons than their PlayStation names suggest (X is Square).
+	public bool ShowXboxButtonTip => settings.Current.Emulation == PadKind.Xbox360;
 
 	// ViGEmBus only matters for the Xbox 360 and DualShock 4 choices.
 	public bool ShowViGEmBus => settings.Current.Emulation is PadKind.Xbox360 or PadKind.DualShock4;

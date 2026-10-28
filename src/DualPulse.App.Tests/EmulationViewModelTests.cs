@@ -245,6 +245,32 @@ public sealed class EmulationViewModelTests
 		Assert.Equal(shown, CreateViewModel().ShowViGEmBus);
 	}
 
+	[Theory]
+	[InlineData(PadKind.Xbox360, true)]
+	[InlineData(PadKind.DualShock4, false)]
+	[InlineData(PadKind.DualSense, false)]
+	[InlineData(null, false)]
+	public void XboxButtonTip_ShowsOnlyForXbox360(PadKind? kind, bool shown)
+	{
+		// Games then show Xbox letters, which sit on other buttons than their PlayStation names suggest (X is Square).
+		settings.Update(s => s with { Emulation = kind });
+
+		Assert.Equal(shown, CreateViewModel().ShowXboxButtonTip);
+	}
+
+	[Fact]
+	public void XboxButtonTip_FollowsAChangedChoice()
+	{
+		EmulationViewModel viewModel = CreateViewModel();
+		List<string?> changed = [];
+		viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+		settings.Update(s => s with { Emulation = PadKind.Xbox360 });
+
+		Assert.Contains(nameof(EmulationViewModel.ShowXboxButtonTip), changed);
+		Assert.True(viewModel.ShowXboxButtonTip);
+	}
+
 	[Fact]
 	public void GameSound_Toggle_WritesTheSetting_AndShowsWithTheDualSense()
 	{
