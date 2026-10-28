@@ -18,6 +18,29 @@ if (args.Length >= 4 && args[0] == "lightbar")
 	string? only = args.SkipWhile(a => a != "--only").Skip(1).FirstOrDefault();
 	return SendLightbar(color, layout, only);
 }
+if (args.Length >= 1 && args[0] == "xinput-watch")
+{
+	// What games read from the first XInput pad: each change in buttons and triggers, for 15 s (or the given seconds).
+	int seconds = args.Length >= 2 ? int.Parse(args[1]) : 15;
+	(ushort Buttons, byte Left, byte Right)? last = null;
+	System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+	while (clock.Elapsed.TotalSeconds < seconds)
+	{
+		if (XInput.XInputGetState(0, out XInput.State state) == 0)
+		{
+			var now = (state.Buttons, state.LeftTrigger, state.RightTrigger);
+			if (now != last)
+			{
+				string[] names = ["Up", "Down", "Left", "Right", "Start", "Back", "LS", "RS", "LB", "RB", "", "", "A", "B", "X", "Y"];
+				string held = string.Join(" ", names.Where((name, bit) => name != "" && (state.Buttons & (1 << bit)) != 0));
+				Console.WriteLine($"{clock.Elapsed.TotalSeconds,6:0.00}s  LT {state.LeftTrigger,3}  RT {state.RightTrigger,3}  buttons: {(held == "" ? "-" : held)}");
+				last = now;
+			}
+		}
+		Thread.Sleep(5);
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "xinput-rumble")
 {
 	return XInputRumble();
