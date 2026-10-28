@@ -46,7 +46,7 @@ public sealed class EmulationServiceTests : IDisposable
 		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
 		rumble = new RumbleService(controller, settings, time);
 		emulation = new EmulationService(controller, backend, settings, rumble, NullLogger<EmulationService>.Instance, time: time, padWorker: Inline,
-			usbAudio: usbAudio, notifier: notifier, microphoneMonitor: microphoneMonitor, noiseSuppressor: () => new HalvingSuppressor());
+			usbAudio: usbAudio, notifier: notifier, microphoneMonitor: microphoneMonitor);
 	}
 
 	public void Dispose()
@@ -418,8 +418,6 @@ public sealed class EmulationServiceTests : IDisposable
 	[Fact]
 	public async Task OnUsb_RecordingFromTheVirtualMicrophone_UsesTheControllersOwn()
 	{
-		// Raw sound, to see the route itself (noise suppression is on by default).
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseSuppression: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 
 		pad.SetMicrophoneOpen(true);
@@ -432,8 +430,6 @@ public sealed class EmulationServiceTests : IDisposable
 	[Fact]
 	public async Task OnUsb_Recording_ShowsInTheMonitor_WithWhatTheGameGets()
 	{
-		// Raw sound, to see the route itself (noise suppression is on by default).
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseSuppression: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 		Assert.False(microphoneMonitor.InUse);
 
@@ -449,18 +445,17 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
-	public async Task OnUsb_GamesHearTheMicrophoneCleaned_AsSet()
+	public async Task OnUsb_GamesHearTheMicrophoneBoosted_AsSet()
 	{
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseSuppression: true, BoostDb: 6) });
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(BoostDb: 6) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 		pad.SetMicrophoneOpen(true);
 		TestReports.WaitUntil(() => usbAudio.Microphone != null);
 
-		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)1000, 2 * MicrophoneProcessor.FrameLength).ToArray());
+		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)1000, 8).ToArray());
 
-		// Halved by the suppressor, then +6 dB.
-		Assert.Equal(2 * MicrophoneProcessor.FrameLength, pad.MicrophoneWritten.Count);
-		Assert.All(pad.MicrophoneWritten, s => Assert.InRange(s, 995, 1000));
+		Assert.Equal(8, pad.MicrophoneWritten.Count);
+		Assert.All(pad.MicrophoneWritten, s => Assert.InRange(s, 1990, 2000));
 	}
 
 	[Fact]
@@ -516,23 +511,6 @@ public sealed class EmulationServiceTests : IDisposable
 		public FakeMicrophone? Microphone { get; private set; }
 
 		public IDisposable? OpenMicrophone(MicrophoneBlock blocks) => Microphone = new FakeMicrophone(blocks);
-	}
-
-	// Stands in for RNNoise: halves the sound and always hears speech.
-	private sealed class HalvingSuppressor : INoiseSuppressor
-	{
-		public float Process(Span<float> frame)
-		{
-			for (int i = 0; i < frame.Length; i++)
-			{
-				frame[i] /= 2;
-			}
-			return 1;
-		}
-
-		public void Dispose()
-		{
-		}
 	}
 
 	private sealed class FakeMicrophone(MicrophoneBlock blocks) : IDisposable

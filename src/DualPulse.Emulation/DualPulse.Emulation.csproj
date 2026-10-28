@@ -9,8 +9,6 @@
     <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
     <!-- WASAPI loopback capture for system-audio haptics (Windows implementation of ISystemAudioSource). -->
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
-    <!-- RNNoise (Xiph, BSD 3-Clause) with native binaries: noise suppression and speech detection for the microphone. -->
-    <PackageReference Include="YellowDogMan.RRNoise.NET" Version="0.1.9" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DualPulse.Core\DualPulse.Core.csproj" />

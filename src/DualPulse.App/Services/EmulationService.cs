@@ -58,8 +58,6 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 
 	private readonly VirtualMicrophoneMonitor? microphoneMonitor;
 
-	private readonly Func<INoiseSuppressor?> noiseSuppressor;
-
 	private readonly INotifier? notifier;
 
 	// A USB session this soon after a Bluetooth one is the same controller plugged in (USB opens, then Bluetooth goes);
@@ -130,9 +128,8 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	public EmulationService(IControllerService controller, IVirtualPadBackend backend, ISettingsService settings, IRumbleService rumble, ILogger<EmulationService> logger,
 		IPcControlService? pcControl = null, IGyroService? gyro = null, IProfileService? profiles = null, TimeProvider? time = null,
 		Action<Action>? padWorker = null, IControllerUsbAudio? usbAudio = null, INotifier? notifier = null,
-		VirtualMicrophoneMonitor? microphoneMonitor = null, Func<INoiseSuppressor?>? noiseSuppressor = null)
+		VirtualMicrophoneMonitor? microphoneMonitor = null)
 	{
-		this.noiseSuppressor = noiseSuppressor ?? (() => null);
 		this.microphoneMonitor = microphoneMonitor;
 		this.notifier = notifier;
 		this.usbAudio = usbAudio;
@@ -627,7 +624,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		float[] hapticBuffer = [];
 		float[] speakerBuffer = [];
 		UsbAudioRoute? usbRoute = bound.Transport == Transport.Usb && usbAudio != null ? new UsbAudioRoute(usbAudio, time, logger) : null;
-		MicrophoneRoute? microphone = bound.Transport == Transport.Usb && usbAudio != null ? new MicrophoneRoute(usbAudio, pad, microphoneMonitor, settings, noiseSuppressor, logger) : null;
+		MicrophoneRoute? microphone = bound.Transport == Transport.Usb && usbAudio != null ? new MicrophoneRoute(usbAudio, pad, microphoneMonitor, settings, logger) : null;
 		// What the user lets the game set (lights, adaptive triggers); the rest stays theirs.
 		byte[] Allowed(byte[] block) => GameOutput.Without(block, lights: !settings.Current.GameLights, triggers: !settings.Current.GameTriggers);
 		if (game.Carried is { } carried)
@@ -736,15 +733,12 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	}
 
 	// While the host records from the virtual DualSense's microphone, the real controller's own microphone (USB) feeds
-	// it, cleaned up as the Microphone settings say; closed when recording stops or the game hook ends. Opening runs off
+	// it, boosted as the Microphone settings say; closed when recording stops or the game hook ends. Opening runs off
 	// the USB/IP thread.
 	private sealed class MicrophoneRoute(IControllerUsbAudio audio, IDualSensePad pad, VirtualMicrophoneMonitor? monitor, ISettingsService settings,
-		Func<INoiseSuppressor?> noiseSuppressor, ILogger logger)
+		ILogger logger)
 	{
-		// Held while a block is processed, so the native suppressor is never freed in the middle of one.
-		private readonly object processing = new();
-
-		private MicrophoneProcessor? processor;
+		private readonly MicrophoneProcessor processor = new();
 
 		private readonly object gate = new();
 
@@ -776,18 +770,8 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		// Capture thread.
 		private void Feed(ReadOnlySpan<short> stereo)
 		{
-			lock (processing)
-			{
-				if (processor == null)
-				{
-					return;
-				}
-				MicrophoneSettings wanted = settings.Current.EffectiveMicrophone;
-				processor.NoiseSuppression = wanted.NoiseSuppression;
-				processor.VoiceGate = wanted.VoiceGate;
-				processor.BoostDb = wanted.BoostDb;
-				processor.Process(stereo, Output);
-			}
+			processor.BoostDb = settings.Current.EffectiveMicrophone.BoostDb;
+			processor.Process(stereo, Output);
 		}
 
 		private void Output(ReadOnlySpan<short> stereo)
@@ -802,11 +786,6 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			{
 				if (wanted && capture == null)
 				{
-					lock (processing)
-					{
-						processor?.Dispose();
-						processor = new MicrophoneProcessor(noiseSuppressor);
-					}
 					try
 					{
 						capture = audio.OpenMicrophone(Feed);
@@ -827,11 +806,6 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 						capture.Dispose();
 						capture = null;
 						logger.LogInformation("Recording from the virtual DualSense stopped: the controller's microphone is closed");
-					}
-					lock (processing)
-					{
-						processor?.Dispose();
-						processor = null;
 					}
 					monitor?.SetInUse(false);
 				}

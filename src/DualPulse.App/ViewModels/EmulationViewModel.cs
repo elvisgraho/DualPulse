@@ -104,8 +104,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 	public IReadOnlyList<string> ModePoints => settings.Current.Emulation switch
 	{
 		null => ["Games use your DualSense as it is.", "DualPulse's stick, button and gyro settings don't reach games."],
-		PadKind.DualSense => ["Adaptive triggers, haptics and the speaker, also over Bluetooth.", "Your stick, button and gyro settings work in games.",
-			"Games get your microphone with DualPulse's noise filtering."],
+		PadKind.DualSense => ["Adaptive triggers, haptics and the speaker, also over Bluetooth.", "Your stick, button and gyro settings work in games."],
 		_ => ["For games without DualSense support.", "Your stick, button and gyro settings work in games."]
 	};
 

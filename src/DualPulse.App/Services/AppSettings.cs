@@ -52,9 +52,8 @@ public enum ControllerAudioOutput
 
 // PC sound on the controller over Bluetooth: the output device whose sound is forwarded (null = the default output),
 // where it plays and how loud (0-100).
-// What games hear from the virtual DualSense's microphone: noise suppression (RNNoise), a voice gate and a boost of
-// 0-12 dB (see MicrophoneProcessor).
-public sealed record MicrophoneSettings(bool NoiseSuppression = true, bool VoiceGate = false, int BoostDb = 0);
+// What games hear from the virtual DualSense's microphone: a boost of 0-12 dB (see MicrophoneProcessor).
+public sealed record MicrophoneSettings(int BoostDb = 0);
 
 public sealed record ControllerAudioSettings(bool Enabled = false, string? DeviceId = null, ControllerAudioOutput Output = ControllerAudioOutput.Auto, int Volume = 70);
 
