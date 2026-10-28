@@ -88,6 +88,7 @@ public sealed partial class HomeViewModel : ObservableObject
 			OnPropertyChanged(nameof(SelectedTriggerPreset));
 			OnPropertyChanged(nameof(EmulationOn));
 			OnPropertyChanged(nameof(LightbarSwatches));
+			OnPropertyChanged(nameof(Lightbar));
 			RefreshNamedProfiles();
 		});
 		controller.SessionChanged += OnBackgroundChange;
@@ -102,6 +103,9 @@ public sealed partial class HomeViewModel : ObservableObject
 	}
 
 	public IReadOnlyList<SwatchChoice> LightbarSwatches => SwatchChoice.For(settings.Current.EffectiveLightbar);
+
+	// The chosen lightbar colour, shown on the controller drawing.
+	public Rgb Lightbar => settings.Current.EffectiveLightbar;
 
 	// Default and the named profiles, for switching by hand; only shown once a named profile exists. Updated in place
 	// so the dropdown keeps its selection.

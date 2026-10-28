@@ -13,6 +13,7 @@
       <Grid RowDefinitions="Auto,*,Auto">
         <TextBlock Classes="subtitle" Text="Controller" />
         <controls:ControllerView Grid.Row="1" Margin="0,16,0,0" Snapshot="{Binding Snapshot}" Cabled="{Binding IsCabled}"
+                                 Lightbar="{Binding Lightbar, Converter={x:Static views:Converters.RgbToBrush}}"
                                  Opacity="{Binding IsConnected, Converter={x:Static views:Converters.ConnectedOpacity}}">
           <controls:ControllerView.Transitions>
             <Transitions>
@@ -20,9 +21,13 @@
             </Transitions>
           </controls:ControllerView.Transitions>
         </controls:ControllerView>
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0" IsVisible="{Binding IsConnected}">
-          <TextBlock Classes="secondary" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding DeviceSummary}" />
-          <Button Grid.Column="1" Content="Details" Command="{Binding ShowDeviceInfoCommand}" />
+        <!-- Always takes its space, so the drawing above doesn't grow or shrink when the controller comes and goes. -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+          <TextBlock Classes="secondary" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding DeviceSummary}"
+                     IsVisible="{Binding IsConnected}" />
+          <TextBlock Classes="secondary" VerticalAlignment="Center" Text="Not connected" IsVisible="{Binding !IsConnected}" />
+          <Button Grid.Column="1" Content="Details" Command="{Binding ShowDeviceInfoCommand}" IsEnabled="{Binding IsConnected}"
+                  Opacity="{Binding IsConnected, Converter={x:Static views:Converters.ShownOpacity}}" />
         </Grid>
       </Grid>
     </Border>
