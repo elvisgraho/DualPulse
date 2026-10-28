@@ -54,7 +54,10 @@ internal static unsafe partial class WindowNative
 		return pid == 0 ? null : ExeOfProcess(pid);
 	}
 
-	public static string? ExeOfProcess(uint pid)
+	public static string? ExeOfProcess(uint pid) => FullPathOfProcess(pid) is { } path ? Path.GetFileName(path) : null;
+
+	// The full path of the process's exe, or null when it can't be opened.
+	public static string? FullPathOfProcess(uint pid)
 	{
 		nint process = OpenProcess(ProcessQueryLimitedInformation, 0, pid);
 		if (process == 0)
@@ -65,7 +68,7 @@ internal static unsafe partial class WindowNative
 		{
 			char* buffer = stackalloc char[1024];
 			int size = 1024;
-			return QueryFullProcessImageNameW(process, 0, buffer, ref size) != 0 ? Path.GetFileName(new string(buffer, 0, size)) : null;
+			return QueryFullProcessImageNameW(process, 0, buffer, ref size) != 0 ? new string(buffer, 0, size) : null;
 		}
 		finally
 		{

@@ -596,6 +596,18 @@ if (args.Length >= 1 && args[0] == "mic-gate")
 	Console.WriteLine($"{frames / 48000.0:0.0} s, gate open about {openFrames * 100.0 / Math.Max(1, frames):0.0}% of the time, opened {opens} times");
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "steam")
+{
+	// What DualPulse sees of Steam: running, Steam Input active (its virtual gamepad), the focused Steam game, and how
+	// many installed games it can tell apart.
+	DualPulse.Emulation.WindowsSteamClient steam = new();
+	Console.WriteLine($"running {steam.IsRunning()}, Steam Input active {steam.InputActive()}, focused game {steam.ForegroundGame()?.Name ?? "(none)"}");
+	if (args.Length >= 2)
+	{
+		Console.WriteLine($"{Path.GetFileName(args[1])} belongs to: {steam.GameAt(args[1])?.Name ?? "(no Steam game)"}");
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "mic-echo")
 {
 	// Records the real microphone and the virtual one together for 6 s and lines them up: one clear match is a clean

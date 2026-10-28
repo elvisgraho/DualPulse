@@ -31,6 +31,7 @@ internal static class PlatformServices
 		services.AddSingleton<ISystemAudioSourceFactory, WasapiLoopbackSourceFactory>();
 		services.AddSingleton<IDefaultAudioOutput, WindowsDefaultAudioOutput>();
 		services.AddSingleton<IControllerUsbAudio, WindowsControllerUsbAudio>();
+		services.AddSingleton<DualPulse.Core.Steam.ISteamClient, WindowsSteamClient>();
 		services.AddSingleton<IRunRegistry, RunRegistry>();
 		services.AddSingleton<IBluetoothRadio, WindowsBluetoothRadio>();
 		return services;
@@ -49,6 +50,7 @@ internal static class PlatformServices
 		services.AddSingleton<ISystemAudioSourceFactory, Unsupported.SystemAudioSourceFactory>();
 		services.AddSingleton<IDefaultAudioOutput, Unsupported.DefaultAudioOutput>();
 		services.AddSingleton<IControllerUsbAudio, Unsupported.ControllerUsbAudio>();
+		services.AddSingleton<DualPulse.Core.Steam.ISteamClient, Unsupported.SteamClient>();
 		services.AddSingleton<IRunRegistry, Unsupported.RunRegistry>();
 		services.AddSingleton<IBluetoothRadio, Unsupported.BluetoothRadio>();
 		return services;

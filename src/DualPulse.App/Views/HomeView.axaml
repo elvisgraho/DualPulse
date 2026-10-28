@@ -30,6 +30,14 @@
     <!-- Status and quick actions -->
     <ScrollViewer Grid.Column="2">
       <StackPanel Spacing="12">
+        <Border Classes="card" IsVisible="{Binding ShowSteamInput}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="caption" Text="STEAM INPUT" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding SteamInputText}" />
+            <TextBlock Classes="caption" TextWrapping="Wrap" Text="In Steam: the game's Properties, Controller, Disable Steam Input." />
+            <Button Content="Open in Steam" Command="{Binding OpenInSteamCommand}" />
+          </StackPanel>
+        </Border>
         <Border Classes="card status" Classes.connected="{Binding IsConnected}">
           <StackPanel Spacing="4">
             <TextBlock Classes="caption" Text="CONNECTION" />

@@ -117,6 +117,15 @@ internal static class Unsupported
 	}
 
 	// No output devices to capture, so controller audio has no source.
+	public sealed class SteamClient : DualPulse.Core.Steam.ISteamClient
+	{
+		public bool IsRunning() => false;
+
+		public bool InputActive() => false;
+
+		public DualPulse.Core.Steam.SteamApp? ForegroundGame() => null;
+	}
+
 	public sealed class SystemAudioSourceFactory : ISystemAudioSourceFactory
 	{
 		public IReadOnlyList<AudioDevice> OutputDevices() => [];

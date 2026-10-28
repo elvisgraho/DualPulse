@@ -49,6 +49,8 @@ internal static class Hosting
 		builder.Services.AddSingleton<ControllerService>();
 		builder.Services.AddSingleton<IControllerService>(s => s.GetRequiredService<ControllerService>());
 		builder.Services.AddSingleton<VirtualMicrophoneMonitor>();
+		builder.Services.AddSingleton(s => new SteamInputWatch(s.GetRequiredService<DualPulse.Core.Steam.ISteamClient>(), s.GetRequiredService<IControllerService>(),
+			s.GetRequiredService<INotifier>(), s.GetRequiredService<TimeProvider>()));
 		builder.Services.AddSingleton<EmulationService>();
 		builder.Services.AddSingleton<IEmulationService>(s => s.GetRequiredService<EmulationService>());
 		builder.Services.AddSingleton<ModOverride>();
@@ -80,6 +82,7 @@ internal static class Hosting
 		builder.Services.AddHostedService(s => s.GetRequiredService<ProfileService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<EmulationService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<MicMuteService>());
+		builder.Services.AddHostedService(s => s.GetRequiredService<SteamInputWatch>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<LightingService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<RumbleService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<AudioHapticsService>());
@@ -107,7 +110,8 @@ internal static class Hosting
 			s.GetRequiredService<IHidHideService>()));
 		builder.Services.AddSingleton(s => new HomeViewModel(s.GetRequiredService<IControllerService>(), s.GetRequiredService<IEmulationService>(),
 			s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IPowerService>(), s.GetService<IPcControlService>(), s.GetRequiredService<TimeProvider>(),
-			() => new DeviceInfoViewModel(s.GetRequiredService<IControllerService>(), s.GetRequiredService<TimeProvider>(), CopyToClipboard)));
+			() => new DeviceInfoViewModel(s.GetRequiredService<IControllerService>(), s.GetRequiredService<TimeProvider>(), CopyToClipboard),
+			s.GetRequiredService<SteamInputWatch>()));
 		builder.Services.AddSingleton<LightingViewModel>();
 		builder.Services.AddSingleton<TriggersViewModel>();
 		builder.Services.AddSingleton<RumbleViewModel>();

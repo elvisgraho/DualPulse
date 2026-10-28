@@ -25,6 +25,20 @@ public sealed partial class HomeViewModel : ObservableObject
 
 	private readonly Func<DeviceInfoViewModel>? deviceInfo;
 
+	private readonly SteamInputWatch? steamInput;
+
+	private readonly Action<string> open;
+
+	// Steam Input is on for the game being played (see SteamInputWatch).
+	[ObservableProperty]
+	public partial bool ShowSteamInput { get; private set; }
+
+	[ObservableProperty]
+	public partial string SteamInputText { get; private set; } = "";
+
+	[RelayCommand]
+	private void OpenInSteam() => open(steamInput?.Game is { } game ? $"steam://nav/games/details/{game.AppId}" : "steam://open/games");
+
 	// The controller details shown over Home while open (refreshed with the status values).
 	[ObservableProperty]
 	public partial DeviceInfoViewModel? DeviceInfo { get; private set; }
@@ -53,8 +67,11 @@ public sealed partial class HomeViewModel : ObservableObject
 	private readonly object sampleGate = new();
 
 	public HomeViewModel(IControllerService controller, IEmulationService emulation, ISettingsService settings, IPowerService power,
-		IPcControlService? pcControl = null, TimeProvider? time = null, Func<DeviceInfoViewModel>? deviceInfo = null)
+		IPcControlService? pcControl = null, TimeProvider? time = null, Func<DeviceInfoViewModel>? deviceInfo = null,
+		SteamInputWatch? steamInput = null, Action<string>? open = null)
 	{
+		this.steamInput = steamInput;
+		this.open = open ?? Platform.Shell.Open;
 		this.time = time ?? TimeProvider.System;
 		this.deviceInfo = deviceInfo;
 		this.pcControl = pcControl;
@@ -188,6 +205,8 @@ public sealed partial class HomeViewModel : ObservableObject
 		ControllerSession? session = controller.Session;
 		IsConnected = session != null;
 		IsCabled = session?.Transport == Transport.Usb;
+		ShowSteamInput = steamInput?.Active == true;
+		SteamInputText = $"Steam Input is on for {steamInput?.Game?.Name ?? "this game"}. It can take your triggers and lights.";
 		_ = DeviceInfo?.LoadAsync();
 		EmulationText = emulation.Status == EmulationStatus.DriverMissing ? "Driver missing" : settings.Current.Emulation switch
 		{
