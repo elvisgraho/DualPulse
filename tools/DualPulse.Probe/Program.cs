@@ -647,6 +647,40 @@ if (args.Length >= 1 && args[0] == "mic-echo")
 		matches.Add((dot / Math.Sqrt(ea * eb + 1e-18), lag));
 	}
 	Console.WriteLine($"real {a.Count / 48000.0:0.00} s, virtual {b.Count / 48000.0:0.00} s");
+	// Sample by sample at the best delay: in 1 ms blocks where the real microphone has sound, how far the virtual one
+	// differs from it (after matching their levels). A clean pass-through differs only by rounding.
+	int bestLag = matches.OrderByDescending(m => m.R).First().Lag;
+	for (int fine = Math.Max(0, bestLag - 8); fine <= bestLag + 8; fine++)
+	{
+		double d = 0, ea2 = 0, eb2 = 0;
+		for (int i = start; i < start + length; i++) { d += a[i] * b[i + fine]; ea2 += a[i] * a[i]; eb2 += b[i + fine] * b[i + fine]; }
+		if (d / Math.Sqrt(ea2 * eb2 + 1e-18) > matches.Max(m => m.R) - 1e-9) { bestLag = fine; }
+	}
+	int blocks = 0, bad = 0;
+	double worst = 0;
+	List<int> badAt = [];
+	for (int block = start; block + 48 < start + length; block += 48)
+	{
+		double ea3 = 0, dot3 = 0, eb3 = 0;
+		for (int i = block; i < block + 48; i++) { ea3 += a[i] * a[i]; eb3 += b[i + bestLag] * b[i + bestLag]; dot3 += a[i] * b[i + bestLag]; }
+		if (ea3 / 48 < 1e-6 || eb3 / 48 < 1e-5)
+		{
+			continue;
+		}
+		double gain = dot3 / ea3, err = 0;
+		for (int i = block; i < block + 48; i++) { double e = b[i + bestLag] - gain * a[i]; err += e * e; }
+		double relative = Math.Sqrt(err / eb3);
+		blocks++;
+		if (relative > 0.1)
+		{
+			bad++;
+			badAt.Add((block - start) / 48);
+		}
+		worst = Math.Max(worst, relative);
+	}
+	Console.WriteLine($"  at {bestLag / 48.0:0.00} ms: {blocks} blocks with sound, {bad} differ by more than 10% (worst {worst:P0})");
+	Console.WriteLine($"  differing ms: {string.Join(" ", badAt.Take(80))}");
+	Console.WriteLine($"  by ms within each 10 ms: {string.Join(" ", Enumerable.Range(0, 10).Select(k => badAt.Count(m => m % 10 == k)))}");
 	foreach ((double r, int lag) in matches.OrderByDescending(m => Math.Abs(m.R)).Where((m, i) => true).Take(40)
 		.Aggregate(new List<(double, int)>(), (kept, m) => { if (kept.All(k => Math.Abs(k.Item2 - m.Lag) > 480)) { kept.Add(m); } return kept; }).Take(4))
 	{
@@ -677,7 +711,7 @@ if (args.Length >= 1 && args[0] == "mic-gaps")
 			}
 		};
 		capture.StartRecording();
-		Thread.Sleep(5000);
+		Thread.Sleep(args.Length >= 2 ? int.Parse(args[1]) * 1000 : 5000);
 		capture.StopRecording();
 		int gaps = 0, run = 0, zeroFrames = 0;
 		double sum = 0;

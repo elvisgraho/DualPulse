@@ -90,6 +90,8 @@ public sealed class UsbIpDualSensePad : IDualSensePad
 
 	public void WriteMicrophone(ReadOnlySpan<short> stereo) => device.WriteMicrophone(stereo);
 
+	public (long ShortFrames, long DroppedFrames, int BufferedFrames) MicrophoneStats => device.MicrophoneStats;
+
 	public event GameAudio? Speaker;
 
 	public event Action? Lost;

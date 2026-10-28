@@ -62,6 +62,9 @@ public interface IDualSensePad : IVirtualPad
 
 	// Interleaved 16-bit stereo at 48 kHz for the pad's microphone.
 	void WriteMicrophone(ReadOnlySpan<short> stereo);
+
+	// Diagnostics: microphone frames sent as silence (ran short), dropped (buffer full), and waiting now.
+	(long ShortFrames, long DroppedFrames, int BufferedFrames) MicrophoneStats => default;
 }
 
 // Routes each pad kind to the backend that can create it: DualSense to the USB/IP one, the others to ViGEm.

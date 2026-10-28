@@ -781,6 +781,25 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		{
 			pad.WriteMicrophone(stereo);
 			monitor?.Levels.Push(stereo);
+			LogStats();
+		}
+
+		private long statsAt = Environment.TickCount64;
+
+		private (long Short, long Dropped) statsBefore;
+
+		// Every 5 s while recording: how often the virtual microphone ran short or overflowed.
+		private void LogStats()
+		{
+			if (Environment.TickCount64 - statsAt < 5000)
+			{
+				return;
+			}
+			statsAt = Environment.TickCount64;
+			(long shortFrames, long dropped, int buffered) = pad.MicrophoneStats;
+			logger.LogInformation("Virtual microphone, last 5 s: {Short} frames short, {Dropped} dropped, {Buffered} waiting",
+				shortFrames - statsBefore.Short, dropped - statsBefore.Dropped, buffered);
+			statsBefore = (shortFrames, dropped);
 		}
 
 		private void Apply()

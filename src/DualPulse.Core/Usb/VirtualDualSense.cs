@@ -105,6 +105,23 @@ public sealed class VirtualDualSense : IUsbIpDevice
 	private const int MicrophonePrimeSamples = 2 * 480;
 
 	// Interleaved 16-bit stereo at 48 kHz from the real microphone; called from the capture thread.
+	// Diagnostics: frames sent as silence because the buffer ran short, frames dropped because it was full, and how
+	// many frames wait now.
+	public (long ShortFrames, long DroppedFrames, int BufferedFrames) MicrophoneStats
+	{
+		get
+		{
+			lock (microphone)
+			{
+				return (microphoneShort, microphoneDropped, microphoneCount / 2);
+			}
+		}
+	}
+
+	private long microphoneShort;
+
+	private long microphoneDropped;
+
 	public void WriteMicrophone(ReadOnlySpan<short> stereo)
 	{
 		lock (microphone)
@@ -115,6 +132,7 @@ public sealed class VirtualDualSense : IUsbIpDevice
 				{
 					microphoneStart = (microphoneStart + 2) % microphone.Length;
 					microphoneCount -= 2;
+					microphoneDropped++;
 				}
 				microphone[(microphoneStart + microphoneCount) % microphone.Length] = sample;
 				microphoneCount++;
@@ -145,6 +163,7 @@ public sealed class VirtualDualSense : IUsbIpDevice
 			}
 			microphoneStart = (microphoneStart + take) % microphone.Length;
 			microphoneCount -= take;
+			microphoneShort += (samples.Length - take) / 2;
 		}
 		return UrbResult.Ok(data) with { IsoActualLengths = lengths };
 	}
