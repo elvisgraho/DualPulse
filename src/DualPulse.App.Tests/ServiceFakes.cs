@@ -288,6 +288,18 @@ internal sealed class FakePadBackend : IVirtualPadBackend
 	// The host drops the next DualSense pads before anyone can subscribe to Lost.
 	public bool CreateLost { get; set; }
 
+	// The options each pad was created with, in order.
+	public List<PadOptions> Options { get; } = [];
+
+	public IVirtualPad Create(PadKind kind, PadOptions options)
+	{
+		lock (Options)
+		{
+			Options.Add(options);
+		}
+		return Create(kind);
+	}
+
 	public IVirtualPad Create(PadKind kind)
 	{
 		if (!IsAvailable)

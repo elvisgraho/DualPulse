@@ -48,6 +48,13 @@
           </Grid>
           <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
             <StackPanel Spacing="2">
+              <TextBlock Text="Sound device for games" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Off: no extra sound device in Windows; games lose haptics, the speaker and the microphone." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" VerticalAlignment="Center" IsChecked="{Binding VirtualSoundDevice}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
+            <StackPanel Spacing="2">
               <TextBlock Text="Game sets the lights" />
               <TextBlock Classes="caption" TextWrapping="Wrap" Text="Off: your lightbar and player LEDs stay." />
             </StackPanel>

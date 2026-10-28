@@ -67,8 +67,19 @@ public sealed class VirtualDualSense : IUsbIpDevice
 
 	private bool freshInput;
 
-	public VirtualDualSense(string busId, TimeProvider? time = null)
+	// The USB configuration it serves, which interface is its HID one, and its serial number: the full DualSense, or
+	// (withSound false) only the controller, without the sound device.
+	private readonly byte[] configuration;
+
+	private readonly byte hidInterface;
+
+	private readonly string serialNumber;
+
+	public VirtualDualSense(string busId, TimeProvider? time = null, bool withSound = true)
 	{
+		configuration = withSound ? DualSenseUsbDescriptors.Configuration.ToArray() : DualSenseUsbDescriptors.ControllerOnlyConfiguration();
+		hidInterface = withSound ? DualSenseUsbDescriptors.HidInterface : (byte)0;
+		serialNumber = withSound ? ControllerDiscovery.VirtualSerialNumber : ControllerDiscovery.ControllerOnlyVirtualSerialNumber;
 		this.time = time ?? TimeProvider.System;
 		origin = this.time.GetTimestamp();
 		string[] parts = busId.Split('-');
@@ -394,29 +405,29 @@ public sealed class VirtualDualSense : IUsbIpDevice
 		return UrbResult.Ok(answer.Length > length ? answer[..length] : answer);
 	}
 
-	private static byte[]? DeviceDescriptor(ushort value)
+	private byte[]? DeviceDescriptor(ushort value)
 	{
 		int type = value >> 8;
 		int index = value & 0xFF;
 		return type switch
 		{
 			1 => DualSenseUsbDescriptors.Device.ToArray(),
-			2 => DualSenseUsbDescriptors.Configuration.ToArray(),
+			2 => configuration.ToArray(),
 			3 => index switch
 			{
 				0 => [4, 3, 0x09, 0x04],
 				1 => StringDescriptor(DualSenseUsbDescriptors.Manufacturer),
 				2 => StringDescriptor(DualSenseUsbDescriptors.Product),
-				3 => StringDescriptor(ControllerDiscovery.VirtualSerialNumber),
+				3 => StringDescriptor(serialNumber),
 				_ => null
 			},
 			_ => null
 		};
 	}
 
-	private static byte[]? InterfaceDescriptor(ushort value, ushort index)
+	private byte[]? InterfaceDescriptor(ushort value, ushort index)
 	{
-		if (index != DualSenseUsbDescriptors.HidInterface)
+		if (index != hidInterface)
 		{
 			return null;
 		}
@@ -429,9 +440,9 @@ public sealed class VirtualDualSense : IUsbIpDevice
 	}
 
 	// The 9-byte HID class descriptor inside the configuration descriptor.
-	private static byte[]? HidDescriptor()
+	private byte[]? HidDescriptor()
 	{
-		ReadOnlySpan<byte> config = DualSenseUsbDescriptors.Configuration;
+		ReadOnlySpan<byte> config = configuration;
 		for (int i = 0; i + 1 < config.Length && config[i] > 0; i += config[i])
 		{
 			if (config[i + 1] == 0x21)
@@ -566,10 +577,10 @@ public sealed class VirtualDualSense : IUsbIpDevice
 		};
 	}
 
-	private static IReadOnlyList<(byte, byte, byte)> Interfaces()
+	private IReadOnlyList<(byte, byte, byte)> Interfaces()
 	{
 		List<(byte, byte, byte)> interfaces = [];
-		ReadOnlySpan<byte> config = DualSenseUsbDescriptors.Configuration;
+		ReadOnlySpan<byte> config = configuration;
 		for (int i = 0; i + 8 < config.Length && config[i] > 0; i += config[i])
 		{
 			// Interface descriptors with alternate setting 0.

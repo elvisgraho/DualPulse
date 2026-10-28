@@ -98,6 +98,9 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 
 	private PadKind? kind;
 
+	// Whether a virtual DualSense comes with its sound device (settings VirtualSoundDevice).
+	private bool withSound = true;
+
 	private Lease? lease;
 
 	private Hook? hook;
@@ -152,6 +155,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			runPadWork = padWorker;
 		}
 		kind = settings.Current.Emulation;
+		withSound = settings.Current.VirtualSoundDevice;
 		controller.SessionStarted += OnSessionStarted;
 		controller.SessionEnded += OnSessionEnded;
 		// With game profiles, the effective settings (saved + active profile) drive the trigger range.
@@ -263,6 +267,11 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 				kind = current.Emulation;
 				retryBlocked = false;
 			}
+			if (withSound != current.VirtualSoundDevice)
+			{
+				withSound = current.VirtualSoundDevice;
+				retryBlocked = false;
+			}
 		});
 	}
 
@@ -286,7 +295,8 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	// Caller holds gate.
 	private void Reconcile()
 	{
-		if (lease != null && (lease.Kind != kind || disposed))
+		// A virtual DualSense made with or without its sound device is plugged in again when that choice changes.
+		if (lease != null && (lease.Kind != kind || (lease.Kind == PadKind.DualSense && lease.WithSound != withSound) || disposed))
 		{
 			DropLease();
 		}
@@ -358,18 +368,20 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	// finishes is unplugged again right here (also at shutdown, when nothing more is queued).
 	private void CreatePad(PadKind padKind, int ticket)
 	{
+		bool sound;
 		lock (gate)
 		{
 			if (ticket != generation)
 			{
 				return;
 			}
+			sound = withSound;
 		}
 		IVirtualPad? pad = null;
 		string? error = null;
 		try
 		{
-			pad = backend.Create(padKind);
+			pad = backend.Create(padKind, new PadOptions(sound));
 		}
 		catch (Exception exception)
 		{
@@ -390,7 +402,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 				return;
 			}
 			taken = true;
-			Lease created = new(pad, padKind, new GameOutput());
+			Lease created = new(pad, padKind, new GameOutput()) { WithSound = sound };
 			if (pad is IDualSensePad dualSense)
 			{
 				created.Lost = () => OnPadLost(created);
@@ -971,6 +983,9 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		public IVirtualPad Pad { get; } = pad;
 
 		public PadKind Kind { get; } = kind;
+
+		// Made with its sound device (a virtual DualSense).
+		public bool WithSound { get; init; } = true;
 
 		public GameOutput Game { get; } = game;
 

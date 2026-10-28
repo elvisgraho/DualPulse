@@ -290,6 +290,42 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task SoundDeviceOff_TheVirtualDualSenseComesWithoutIt()
+	{
+		settings.Update(s => s with { VirtualSoundDevice = false });
+
+		await ConnectDualSenseAsync();
+
+		Assert.False(backend.Options[^1].WithSound);
+	}
+
+	[Fact]
+	public async Task SwitchingTheSoundDevice_PlugsTheVirtualDualSenseInAgain()
+	{
+		(_, FakeDualSensePad first) = await ConnectDualSenseAsync();
+		Assert.True(backend.Options[^1].WithSound);
+
+		settings.Update(s => s with { VirtualSoundDevice = false });
+
+		TestReports.WaitUntil(() => backend.CreatedDualSense.Count == 2);
+		Assert.True(first.Disposed);
+		Assert.False(backend.Options[^1].WithSound);
+	}
+
+	[Fact]
+	public async Task SwitchingTheSoundDevice_LeavesAnXboxPadAlone()
+	{
+		settings.Update(s => s with { Emulation = PadKind.Xbox360 });
+		transport.Add(FakeHidTransport.UsbPath);
+		await controller.StartAsync(TestContext.Current.CancellationToken);
+
+		settings.Update(s => s with { VirtualSoundDevice = false });
+
+		Assert.Single(backend.Created);
+		Assert.False(backend.Created[0].Disposed);
+	}
+
+	[Fact]
 	public async Task Emulation_RemappedButton_ReachesTheGameAsItsTarget()
 	{
 		settings.Update(s => s with { ButtonRemaps = [new ButtonRemap(Buttons.Cross, Buttons.Circle)] });

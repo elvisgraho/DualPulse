@@ -13,9 +13,14 @@ public static class ControllerDiscovery
 	// placeholders and ignored when matching.
 	public const string VirtualSerialNumber = "DPLS00DUALPULSE-VIRTUAL00";
 
-	public static bool IsOwnVirtual(HidDeviceInfo device)
+	// The virtual DualSense without its sound device: a serial of its own, since Windows remembers a device's layout
+	// by its serial number.
+	public const string ControllerOnlyVirtualSerialNumber = "DPLS01DUALPULSE-VIRTUAL00";
+
+	public static bool IsOwnVirtual(HidDeviceInfo device) => IsVirtualSerial(device.SerialNumber);
+
+	public static bool IsVirtualSerial(string? serial)
 	{
-		string? serial = device.SerialNumber;
 		return serial != null && serial.Length == VirtualSerialNumber.Length
 			&& serial.AsSpan(0, 4).SequenceEqual(VirtualSerialNumber.AsSpan(0, 4))
 			&& serial.AsSpan(6, serial.Length - 8).SequenceEqual(VirtualSerialNumber.AsSpan(6, VirtualSerialNumber.Length - 8));

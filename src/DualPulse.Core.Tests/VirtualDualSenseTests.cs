@@ -43,6 +43,42 @@ public sealed class VirtualDualSenseTests
 	}
 
 	[Fact]
+	public void WithoutSound_IsOnlyTheController()
+	{
+		// For people who don't want its sound device in Windows: games then keep triggers and lights, not haptics.
+		VirtualDualSense controllerOnly = new("1-1", withSound: false);
+
+		Assert.Equal([(3, 0, 0)], controllerOnly.Export.Interfaces);
+		byte[] config = RunOn(controllerOnly, Control(0x80, 6, 0x0200, 0, 255)).Data;
+		Assert.Equal(config.Length, BinaryPrimitives.ReadUInt16LittleEndian(config.AsSpan(2)));
+		Assert.Equal(1, config[4]);
+		// One interface, number 0, HID, with its HID descriptor and both interrupt endpoints.
+		Assert.Equal(new byte[] { 9, 4, 0, 0, 2, 3, 0, 0, 0 }, config[9..18]);
+		Assert.Equal(9 + 9 + 9 + 7 + 7, config.Length);
+		Assert.Equal(DualSenseUsbDescriptors.HidReport.ToArray(), RunOn(controllerOnly, Control(0x81, 6, 0x2200, 0, 1024)).Data);
+	}
+
+	[Fact]
+	public void WithoutSound_HasASerialOfItsOwn_StillKnownAsDualPulses()
+	{
+		// Windows remembers a device's layout by its serial number.
+		VirtualDualSense controllerOnly = new("1-1", withSound: false);
+
+		string serial = Text(RunOn(controllerOnly, Control(0x80, 6, 0x0303, 0x0409, 255)).Data);
+
+		Assert.NotEqual(ControllerDiscovery.VirtualSerialNumber, serial);
+		Assert.True(ControllerDiscovery.IsVirtualSerial(serial));
+	}
+
+	private UrbResult RunOn(VirtualDualSense target, UrbSubmit submit)
+	{
+		UrbResult? result = null;
+		target.Submit(submit, r => result = r);
+		Assert.NotNull(result);
+		return result;
+	}
+
+	[Fact]
 	public void DeviceDescriptor()
 	{
 		UrbResult result = Run(Control(0x80, 6, 0x0100, 0, 18));

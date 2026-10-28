@@ -157,7 +157,8 @@ public sealed record AppSettings(
 	bool GameLights = true,
 	bool GameTriggers = true,
 	MicrophoneSettings? Microphone = null,
-	bool ControllerShortcuts = true)
+	bool ControllerShortcuts = true,
+	bool VirtualSoundDevice = true)
 {
 	public static readonly Rgb AccentLightbar = new(0xC9, 0xA8, 0x6A);
 

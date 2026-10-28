@@ -54,6 +54,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 			OnPropertyChanged(nameof(ShowRemaps));
 			OnPropertyChanged(nameof(HideController));
 			OnPropertyChanged(nameof(ShowReconnect));
+			OnPropertyChanged(nameof(VirtualSoundDevice));
 			OnPropertyChanged(nameof(GameSoundOnController));
 			OnPropertyChanged(nameof(GameLights));
 			OnPropertyChanged(nameof(GameTriggers));
@@ -183,6 +184,19 @@ public sealed partial class EmulationViewModel : ObservableObject
 	}
 
 	// In DualSense mode: whether a game sets the lights / adaptive triggers (off keeps the user's own).
+	// The virtual DualSense's sound device (speaker, haptics, microphone); off, games keep triggers and lights only.
+	public bool VirtualSoundDevice
+	{
+		get => settings.Current.VirtualSoundDevice;
+		set
+		{
+			if (value != settings.Current.VirtualSoundDevice)
+			{
+				settings.Update(s => s with { VirtualSoundDevice = value });
+			}
+		}
+	}
+
 	public bool GameLights
 	{
 		get => settings.Current.GameLights;

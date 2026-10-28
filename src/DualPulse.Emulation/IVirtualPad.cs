@@ -31,9 +31,15 @@ public interface IVirtualPadBackend
 
 	IVirtualPad Create(PadKind kind);
 
+	// With options that only some pads use; the rest ignore them.
+	IVirtualPad Create(PadKind kind, PadOptions options) => Create(kind);
+
 	// Whether this kind can be created now (a backend may serve some kinds and not others).
 	bool IsAvailableFor(PadKind kind) => IsAvailable;
 }
+
+// WithSound: a virtual DualSense with its sound device (speaker, haptics, microphone), or the controller alone.
+public sealed record PadOptions(bool WithSound = true);
 
 // Game audio from a virtual DualSense: interleaved 16-bit PCM at 48 kHz.
 public delegate void GameAudio(ReadOnlySpan<short> samples, int channels);
@@ -76,6 +82,8 @@ public sealed class CompositePadBackend(IVirtualPadBackend classic, IVirtualPadB
 	public string? UnavailableReason => classic.UnavailableReason;
 
 	public IVirtualPad Create(PadKind kind) => kind == PadKind.DualSense ? dualSense.Create(kind) : classic.Create(kind);
+
+	public IVirtualPad Create(PadKind kind, PadOptions options) => kind == PadKind.DualSense ? dualSense.Create(kind, options) : classic.Create(kind);
 
 	public bool IsAvailableFor(PadKind kind) => kind == PadKind.DualSense ? dualSense.IsAvailableFor(kind) : classic.IsAvailableFor(kind);
 

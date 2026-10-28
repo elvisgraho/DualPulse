@@ -99,10 +99,11 @@ public sealed class UsbIpDualSensePad : IDualSensePad
 	public bool IsLost { get; private set; }
 
 	// Blocks until the attacher has plugged the device in; throws UsbIpException (serving nothing) when it can't.
-	public static UsbIpDualSensePad Create(IUsbIpAttacher attacher, ILogger? logger = null)
+	// withSound false: the controller alone, without the sound device (games then send no haptics or speaker sound).
+	public static UsbIpDualSensePad Create(IUsbIpAttacher attacher, ILogger? logger = null, bool withSound = true)
 	{
 		logger ??= NullLogger.Instance;
-		VirtualDualSense device = new(BusId);
+		VirtualDualSense device = new(BusId, withSound: withSound);
 		UsbIpServer server = new();
 		server.Add(device);
 		// The host can let go before the pad exists to notice (Lost); such a pad would look plugged in with nothing behind it.
@@ -186,12 +187,14 @@ public sealed class UsbIpBackend(IUsbIpAttacher attacher, ILogger? logger = null
 
 	public bool IsAvailableFor(PadKind kind) => kind == PadKind.DualSense && IsAvailable;
 
-	public IVirtualPad Create(PadKind kind)
+	public IVirtualPad Create(PadKind kind) => Create(kind, new PadOptions());
+
+	public IVirtualPad Create(PadKind kind, PadOptions options)
 	{
 		if (kind != PadKind.DualSense)
 		{
 			throw new NotSupportedException($"The USB/IP backend only creates DualSense pads, not {kind}.");
 		}
-		return UsbIpDualSensePad.Create(attacher, logger);
+		return UsbIpDualSensePad.Create(attacher, logger, options.WithSound);
 	}
 }

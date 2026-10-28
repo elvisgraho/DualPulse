@@ -181,11 +181,15 @@ public sealed class EmulationViewModelTests
 		Assert.True(viewModel.GameLights);
 		Assert.True(viewModel.GameTriggers);
 
+		Assert.True(viewModel.VirtualSoundDevice);
+
 		viewModel.GameLights = false;
 		viewModel.GameTriggers = false;
+		viewModel.VirtualSoundDevice = false;
 
 		Assert.False(settings.Current.GameLights);
 		Assert.False(settings.Current.GameTriggers);
+		Assert.False(settings.Current.VirtualSoundDevice);
 	}
 
 	[Fact]

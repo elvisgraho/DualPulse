@@ -52,6 +52,28 @@ public static class DualSenseUsbDescriptors
 		0x40, 0x00, 0x01,
 	];
 
+	// The configuration without the sound device: only the HID interface (as interface 0) with its HID descriptor and
+	// endpoints, under a configuration header saying so.
+	public static byte[] ControllerOnlyConfiguration()
+	{
+		ReadOnlySpan<byte> full = Configuration;
+		int hid = 0;
+		for (int i = 0; i + 2 < full.Length && full[i] > 0; i += full[i])
+		{
+			if (full[i + 1] == 4 && full[i + 2] == HidInterface)
+			{
+				hid = i;
+				break;
+			}
+		}
+		byte[] config = [.. full[..9], .. full[hid..]];
+		config[2] = (byte)config.Length;
+		config[3] = (byte)(config.Length >> 8);
+		config[4] = 1;
+		config[9 + 2] = 0;
+		return config;
+	}
+
 	public static ReadOnlySpan<byte> HidReport =>
 	[
 		0x05, 0x01, 0x09, 0x05, 0xA1, 0x01, 0x85, 0x01, 0x09, 0x30, 0x09, 0x31, 0x09, 0x32, 0x09, 0x35,
