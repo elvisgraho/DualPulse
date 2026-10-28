@@ -11,7 +11,8 @@ alternative to DSX.
 - **Wireless haptics, adaptive triggers and speaker** for games with DualSense support, through a virtual DualSense.
 - **Haptic feedback over Bluetooth** from game rumble, and PC sound you can feel in the grips (also on the cable).
 - **Emulation:** Xbox 360, DualShock 4 or DualSense, with your real controller hidden from games.
-- **Profiles:** triggers, gyro and sticks per game (switching automatically) or picked by hand.
+- **Profiles:** triggers, gyro and sticks per game (switching automatically) or picked by hand, also with PS + D-pad
+  on the controller; import and export them as files.
 - **For games:** stick deadzones, button remapping, gyro as the right stick, all trigger effects.
 - **Microphone in games:** the controller's mic through the virtual DualSense, with a click-proof noise gate, low cut
   and boost.
