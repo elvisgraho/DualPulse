@@ -244,15 +244,47 @@ public sealed class VirtualDualSenseTests
 	}
 
 	[Fact]
-	public void Microphone_CompletesWithSilence_AtTheFrameRate()
+	public void Microphone_NothingFed_CompletesWithSilence_AtTheFrameRate()
 	{
 		UrbResult? result = null;
-		pacedDevice.Submit(new UrbSubmit(++seqnum, 0, true, 2, 0, 1920, 0, 10, 1, new byte[8], [], [.. Enumerable.Range(0, 10).Select(i => (i * 192, 192))]), r => result = r);
+		pacedDevice.Submit(MicTransfer(10, 196), r => result = r);
 
 		time.Advance(TimeSpan.FromMilliseconds(9));
 		Assert.Null(result);
 		time.Advance(TimeSpan.FromMilliseconds(1));
 		Assert.Equal(new byte[1920], result!.Data);
+		Assert.Equal(Enumerable.Repeat(192, 10), result.IsoActualLengths!);
+	}
+
+	[Fact]
+	public void Microphone_CarriesWhatWasFed_48FramesPerPacket()
+	{
+		// 48 kHz stereo: one 1 ms packet is 48 frames (192 bytes), whatever room the host leaves.
+		short[] fed = [.. Enumerable.Range(1, 2 * 96).Select(i => (short)i)];
+		pacedDevice.WriteMicrophone(fed);
+		UrbResult? result = null;
+
+		pacedDevice.Submit(MicTransfer(3, 196), r => result = r);
+		time.Advance(TimeSpan.FromMilliseconds(3));
+
+		Assert.Equal(Enumerable.Repeat(192, 3), result!.IsoActualLengths!);
+		short[] samples = new short[result.Data.Length / 2];
+		Buffer.BlockCopy(result.Data, 0, samples, 0, result.Data.Length);
+		Assert.Equal(fed, samples[..fed.Length]);
+		Assert.All(samples[fed.Length..], s => Assert.Equal(0, s));
+	}
+
+	[Fact]
+	public void Microphone_OpenedAndClosed_ByTheHostsInterfaceChoice()
+	{
+		List<bool> changes = [];
+		device.MicrophoneOpened += changes.Add;
+
+		Run(Control(0x01, 11, 1, 2, 0));
+		Run(Control(0x01, 11, 1, 1, 0));
+		Run(Control(0x01, 11, 0, 2, 0));
+
+		Assert.Equal([true, false], changes);
 	}
 
 	private readonly FakeTimeProvider time = new();
@@ -260,6 +292,9 @@ public sealed class VirtualDualSenseTests
 	private VirtualDualSense? paced;
 
 	private VirtualDualSense pacedDevice => paced ??= new VirtualDualSense("1-1", time);
+
+	private UrbSubmit MicTransfer(int packets, int packetLength) =>
+		new(++seqnum, 0, true, 2, 0, packets * packetLength, 0, packets, 1, new byte[8], [], [.. Enumerable.Range(0, packets).Select(i => (i * packetLength, packetLength))]);
 
 	private UrbSubmit AudioTransfer(int packets) =>
 		new(++seqnum, 0, false, 1, 0, packets * 384, 0, packets, 1, new byte[8], new byte[packets * 384], [.. Enumerable.Range(0, packets).Select(i => (i * 384, 384))]);

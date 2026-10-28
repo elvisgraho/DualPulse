@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DualPulse.App.ViewModels"
+             xmlns:controls="using:DualPulse.App.Controls"
+             x:Class="DualPulse.App.Views.MicrophoneView"
+             x:DataType="vm:MicrophoneViewModel">
+  <ScrollViewer>
+    <!-- Content fills the width up to 720 px and stays left-aligned. -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MaxWidth="720" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16" Margin="0,0,16,0">
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="YOUR CONTROLLER'S MICROPHONE" />
+          <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding RealName}"
+                     IsVisible="{Binding RealName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <controls:Waveform Height="64" Peaks="{Binding RealPeaks}" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding Status}" />
+          <Grid ColumnDefinitions="Auto,16,*,16,48" IsVisible="{Binding HasVolume}">
+            <TextBlock VerticalAlignment="Center" Text="Volume" />
+            <Slider Grid.Column="2" Minimum="0" Maximum="100" Value="{Binding Volume}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding Volume, StringFormat={}{0}%}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding ShowVirtual}">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="WHAT GAMES HEAR" />
+          <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding VirtualName}"
+                     IsVisible="{Binding VirtualName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <controls:Waveform Height="64" Peaks="{Binding VirtualPeaks}" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding VirtualStatus}" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="MUTE BUTTON" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Mute button mutes the microphone" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding MicHint}" IsVisible="{Binding MuteButtonMutesMic}" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding MuteButtonMutesMic}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding !MuteButtonMutesMic}">
+            <TextBlock VerticalAlignment="Center" Text="Mute light" />
+            <ComboBox Grid.Column="2" MinWidth="180" ItemsSource="{Binding MicLedChoices}" SelectedItem="{Binding SelectedMicLed}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:MicLedChoice">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

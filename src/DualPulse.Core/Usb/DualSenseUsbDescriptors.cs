@@ -23,6 +23,9 @@ public static class DualSenseUsbDescriptors
 
 	public const byte MicrophoneEndpoint = 0x82;
 
+	// The microphone's streaming interface: alternate setting 1 while the host records, 0 otherwise.
+	public const byte MicrophoneInterface = 2;
+
 	// iSerialNumber is 3 (the real controller has none).
 	public static ReadOnlySpan<byte> Device =>
 	[

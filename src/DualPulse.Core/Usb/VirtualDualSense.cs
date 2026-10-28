@@ -30,7 +30,9 @@ public interface IUsbIpDevice
 // - Interrupt IN 0x84: input reports (SetInput) complete the host's pending transfers.
 // - Interrupt OUT 0x03: the game's output report; its 47-byte block is raised as OutputBlock.
 // - Isochronous OUT 0x01: 4-channel game audio, raised as Speaker (all four) and Haptics (channels 3-4).
-// - Isochronous IN 0x82: microphone, answered with silence.
+// - Isochronous IN 0x82: microphone, 48 kHz stereo; each 1 ms packet carries 48 frames of what WriteMicrophone was
+//   given (silence when there is nothing). MicrophoneOpened tells when the host starts and stops recording
+//   (its interface choice), so the real microphone is only used while something records.
 // Isochronous transfers run on a 1 ms frame clock, like a real bus: each starts where the endpoint's previous one ended
 // (or at the current frame after a gap) and completes once its packets' frames have passed, so the host streams at the
 // real rate. Anything else stalls.
@@ -83,6 +85,55 @@ public sealed class VirtualDualSense : IUsbIpDevice
 	public event PcmBlock? Speaker;
 
 	public event PcmBlock? Haptics;
+
+	// True when the host starts recording from the microphone, false when it stops. Raised on the USB/IP thread.
+	public event Action<bool>? MicrophoneOpened;
+
+	private const int MicrophoneFramesPerPacket = 48;
+
+	// At most 60 ms of microphone sound waits; older sound is dropped so the delay stays short.
+	private readonly short[] microphone = new short[2 * 48 * 60];
+
+	private int microphoneStart;
+
+	private int microphoneCount;
+
+	// Interleaved 16-bit stereo at 48 kHz from the real microphone; called from the capture thread.
+	public void WriteMicrophone(ReadOnlySpan<short> stereo)
+	{
+		lock (microphone)
+		{
+			foreach (short sample in stereo)
+			{
+				if (microphoneCount == microphone.Length)
+				{
+					microphoneStart = (microphoneStart + 2) % microphone.Length;
+					microphoneCount -= 2;
+				}
+				microphone[(microphoneStart + microphoneCount) % microphone.Length] = sample;
+				microphoneCount++;
+			}
+		}
+	}
+
+	// One transfer's worth: 48 frames per packet (fewer if the host leaves less room), packed, with their lengths.
+	private UrbResult MicrophoneTransfer(UrbSubmit urb)
+	{
+		int[] lengths = [.. urb.IsoPackets.Select(p => Math.Min(MicrophoneFramesPerPacket, p.Length / 4) * 4)];
+		byte[] data = new byte[lengths.Sum()];
+		Span<short> samples = MemoryMarshal.Cast<byte, short>(data.AsSpan());
+		lock (microphone)
+		{
+			int take = Math.Min(microphoneCount, samples.Length);
+			for (int i = 0; i < take; i++)
+			{
+				samples[i] = microphone[(microphoneStart + i) % microphone.Length];
+			}
+			microphoneStart = (microphoneStart + take) % microphone.Length;
+			microphoneCount -= take;
+		}
+		return UrbResult.Ok(data) with { IsoActualLengths = lengths };
+	}
 
 	// Diagnostics: each control request with its answer, and the first transfer on each other endpoint.
 	public Action<string>? Trace { get; set; }
@@ -139,10 +190,10 @@ public sealed class VirtualDualSense : IUsbIpDevice
 			return;
 		case (DualSenseUsbDescriptors.SpeakerEndpoint, false):
 			RaiseAudio(urb);
-			SubmitIsochronous(urb, complete, []);
+			SubmitIsochronous(urb, complete, UrbResult.Ok([]));
 			return;
 		case (DualSenseUsbDescriptors.MicrophoneEndpoint & 0x0F, true):
-			SubmitIsochronous(urb, complete, new byte[urb.IsoPackets.Sum(p => p.Length)]);
+			SubmitIsochronous(urb, complete, MicrophoneTransfer(urb));
 			return;
 		default:
 			complete(UrbResult.Stall);
@@ -214,7 +265,7 @@ public sealed class VirtualDualSense : IUsbIpDevice
 		}
 	}
 
-	private void SubmitIsochronous(UrbSubmit urb, Action<UrbResult> complete, byte[] data)
+	private void SubmitIsochronous(UrbSubmit urb, Action<UrbResult> complete, UrbResult data)
 	{
 		lock (gate)
 		{
@@ -229,7 +280,7 @@ public sealed class VirtualDualSense : IUsbIpDevice
 			long start = Math.Max(now, nextFrame.GetValueOrDefault(urb.Endpoint, now));
 			long end = start + Math.Max(1, urb.IsoPackets.Length);
 			nextFrame[urb.Endpoint] = end;
-			UrbResult result = UrbResult.Ok(data) with { StartFrame = unchecked((int)start) };
+			UrbResult result = data with { StartFrame = unchecked((int)start) };
 			pendingIsochronous[urb.Seqnum] = time.CreateTimer(_ => CompleteIsochronous(urb.Seqnum, complete, result), null,
 				TimeSpan.FromMilliseconds(end) - elapsed, Timeout.InfiniteTimeSpan);
 		}
@@ -371,9 +422,22 @@ public sealed class VirtualDualSense : IUsbIpDevice
 
 	private byte[] SetAlternate(ushort index, ushort value)
 	{
+		bool changed;
 		lock (gate)
 		{
+			changed = Alternate(index) != (byte)value;
 			alternateSettings[index] = (byte)value;
+		}
+		if (changed && index == DualSenseUsbDescriptors.MicrophoneInterface)
+		{
+			if (value == 0)
+			{
+				lock (microphone)
+				{
+					microphoneCount = 0;
+				}
+			}
+			MicrophoneOpened?.Invoke(value != 0);
 		}
 		return [];
 	}

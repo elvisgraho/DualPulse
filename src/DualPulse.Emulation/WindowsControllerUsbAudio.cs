@@ -9,7 +9,8 @@ namespace DualPulse.Emulation;
 // The real DualSense's own speaker device on Windows (USB): the active render endpoint named DualSense whose USB
 // audio interface does not belong to DualPulse's virtual pad (the parent USB device's instance id carries the virtual
 // serial). Played through shared-mode WASAPI with little latency; samples arriving faster than the device plays are
-// dropped beyond a short buffer, so haptics never lag behind the game.
+// dropped beyond a short buffer, so haptics never lag behind the game. Its microphone is the capture endpoint found
+// the same way, recorded through shared-mode WASAPI with a 20 ms buffer.
 [SupportedOSPlatform("windows")]
 public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 {
@@ -36,6 +37,94 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 		{
 		}
 		return null;
+	}
+
+	public (string? Real, string? Virtual) MicrophoneNames()
+	{
+		string? real = null, virtualName = null;
+		try
+		{
+			using MMDeviceEnumerator enumerator = new();
+			foreach (MMDevice device in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+			{
+				using (device)
+				{
+					if (!device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+					{
+						continue;
+					}
+					if (IsVirtual(device))
+					{
+						virtualName ??= device.FriendlyName;
+					}
+					else
+					{
+						real ??= device.FriendlyName;
+					}
+				}
+			}
+		}
+		catch (COMException)
+		{
+		}
+		return (real, virtualName);
+	}
+
+	public int? MicrophoneVolume()
+	{
+		using MMDevice? device = RealMicrophone();
+		try
+		{
+			return device == null ? null : (int)Math.Round(device.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
+		}
+		catch (COMException)
+		{
+			return null;
+		}
+	}
+
+	public bool SetMicrophoneVolume(int percent)
+	{
+		using MMDevice? device = RealMicrophone();
+		try
+		{
+			if (device == null)
+			{
+				return false;
+			}
+			device.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(percent, 0, 100) / 100f;
+			return true;
+		}
+		catch (COMException)
+		{
+			return false;
+		}
+	}
+
+	private static MMDevice? RealMicrophone()
+	{
+		try
+		{
+			using MMDeviceEnumerator enumerator = new();
+			foreach (MMDevice device in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+			{
+				if (device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase) && !IsVirtual(device))
+				{
+					return device;
+				}
+				device.Dispose();
+			}
+		}
+		catch (COMException)
+		{
+		}
+		return null;
+	}
+
+	public IDisposable? OpenMicrophone(MicrophoneBlock blocks)
+	{
+		MMDevice? device = RealMicrophone();
+		return device == null ? null : new Microphone(device, blocks);
 	}
 
 	// Public for the probe: whether this endpoint belongs to DualPulse's virtual DualSense.
@@ -77,6 +166,66 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 
 	[LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
 	private static partial int CM_Get_Device_IDW(uint node, [Out] char[] buffer, int length, uint flags);
+
+	private sealed class Microphone : IDisposable
+	{
+		private readonly MMDevice device;
+
+		private readonly WasapiCapture capture;
+
+		private readonly MicrophoneConverter converter;
+
+		private readonly MicrophoneBlock blocks;
+
+		private float[] converted = [];
+
+		public Microphone(MMDevice device, MicrophoneBlock blocks)
+		{
+			this.device = device;
+			this.blocks = blocks;
+			capture = new WasapiCapture(device, false, 20);
+			converter = new MicrophoneConverter(capture.WaveFormat.SampleRate, capture.WaveFormat.Channels);
+			capture.DataAvailable += OnData;
+			capture.StartRecording();
+		}
+
+		private void OnData(object? sender, WaveInEventArgs e)
+		{
+			WaveFormat format = capture.WaveFormat;
+			ReadOnlySpan<byte> bytes = e.Buffer.AsSpan(0, e.BytesRecorded);
+			if (format.Encoding == WaveFormatEncoding.IeeeFloat || (format.Encoding == WaveFormatEncoding.Extensible && format.BitsPerSample == 32))
+			{
+				converter.Process(MemoryMarshal.Cast<byte, float>(bytes), blocks);
+			}
+			else if (format.BitsPerSample == 16)
+			{
+				ReadOnlySpan<short> samples = MemoryMarshal.Cast<byte, short>(bytes);
+				if (converted.Length < samples.Length)
+				{
+					converted = new float[samples.Length];
+				}
+				for (int i = 0; i < samples.Length; i++)
+				{
+					converted[i] = samples[i] / 32768f;
+				}
+				converter.Process(converted.AsSpan(0, samples.Length), blocks);
+			}
+		}
+
+		public void Dispose()
+		{
+			capture.DataAvailable -= OnData;
+			try
+			{
+				capture.StopRecording();
+			}
+			catch (Exception)
+			{
+			}
+			capture.Dispose();
+			device.Dispose();
+		}
+	}
 
 	private sealed class Stream : IControllerAudioStream
 	{

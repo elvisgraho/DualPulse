@@ -506,6 +506,20 @@ internal sealed class FakeDualSensePad : IDualSensePad
 
 	public void SendSpeaker(short[] samples) => Speaker?.Invoke(samples, 4);
 
+	public event Action<bool>? MicrophoneOpened;
+
+	public bool IsMicrophoneOpen { get; private set; }
+
+	public void SetMicrophoneOpen(bool open)
+	{
+		IsMicrophoneOpen = open;
+		MicrophoneOpened?.Invoke(open);
+	}
+
+	public List<short> MicrophoneWritten { get; } = [];
+
+	public void WriteMicrophone(ReadOnlySpan<short> stereo) => MicrophoneWritten.AddRange(stereo);
+
 	public void Dispose() => Disposed = true;
 }
 

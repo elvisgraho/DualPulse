@@ -48,6 +48,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<IProfileService>(s => s.GetRequiredService<ProfileService>());
 		builder.Services.AddSingleton<ControllerService>();
 		builder.Services.AddSingleton<IControllerService>(s => s.GetRequiredService<ControllerService>());
+		builder.Services.AddSingleton<VirtualMicrophoneMonitor>();
 		builder.Services.AddSingleton<EmulationService>();
 		builder.Services.AddSingleton<IEmulationService>(s => s.GetRequiredService<EmulationService>());
 		builder.Services.AddSingleton<ModOverride>();
@@ -114,6 +115,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<SticksViewModel>();
 		builder.Services.AddSingleton<AudioViewModel>();
 		builder.Services.AddSingleton<ModsViewModel>();
+		builder.Services.AddSingleton<MicrophoneViewModel>();
 		builder.Services.AddSingleton<ControllerPageViewModel>();
 		builder.Services.AddSingleton<MappingViewModel>();
 		builder.Services.AddSingleton(s => new EmulationViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IEmulationService>(),

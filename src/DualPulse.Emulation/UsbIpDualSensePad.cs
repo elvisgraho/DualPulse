@@ -56,6 +56,11 @@ public sealed class UsbIpDualSensePad : IDualSensePad
 		device.OutputBlock += block => OutputBlock?.Invoke(block);
 		device.Speaker += (samples, channels) => Speaker?.Invoke(samples, channels);
 		device.Haptics += (samples, channels) => Haptics?.Invoke(samples, channels);
+		device.MicrophoneOpened += open =>
+		{
+			IsMicrophoneOpen = open;
+			MicrophoneOpened?.Invoke(open);
+		};
 		server.Released += _ =>
 		{
 			if (!disposed)
@@ -78,6 +83,12 @@ public sealed class UsbIpDualSensePad : IDualSensePad
 	public event Action<byte[]>? OutputBlock;
 
 	public event GameAudio? Haptics;
+
+	public event Action<bool>? MicrophoneOpened;
+
+	public bool IsMicrophoneOpen { get; private set; }
+
+	public void WriteMicrophone(ReadOnlySpan<short> stereo) => device.WriteMicrophone(stereo);
 
 	public event GameAudio? Speaker;
 

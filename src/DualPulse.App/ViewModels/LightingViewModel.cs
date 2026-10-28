@@ -13,8 +13,6 @@ public sealed record PlayerLedChoice(string Label, PlayerLedPattern Pattern);
 
 public sealed record LedBrightnessChoice(string Label, LedBrightness Brightness);
 
-public sealed record MicLedChoice(string Label, MicLed MicLed);
-
 // The Lighting page. Every change goes straight to the settings (LightingService applies it); changes made elsewhere,
 // such as the Home swatches, flow back into the page through ISettingsService.Changed.
 public sealed partial class LightingViewModel : ObservableObject
@@ -22,8 +20,6 @@ public sealed partial class LightingViewModel : ObservableObject
 	private readonly ISettingsService settings;
 
 	private readonly IControllerService controller;
-
-	private readonly IMicMuteService? micMute;
 
 	private readonly UiContext ui = new();
 
@@ -33,13 +29,8 @@ public sealed partial class LightingViewModel : ObservableObject
 
 	private string hexColour = "";
 
-	public LightingViewModel(ISettingsService settings, IControllerService controller, IMicMuteService? micMute = null)
+	public LightingViewModel(ISettingsService settings, IControllerService controller)
 	{
-		this.micMute = micMute;
-		if (micMute != null)
-		{
-			micMute.Changed += () => ui.Run(() => OnPropertyChanged(nameof(MicHint)));
-		}
 		this.settings = settings;
 		this.controller = controller;
 		SyncColour(settings.Current.EffectiveLightbar);
@@ -72,13 +63,6 @@ public sealed partial class LightingViewModel : ObservableObject
 		new("High", LedBrightness.High),
 		new("Medium", LedBrightness.Medium),
 		new("Low", LedBrightness.Low)
-	];
-
-	public IReadOnlyList<MicLedChoice> MicLedChoices { get; } =
-	[
-		new("Off", MicLed.Off),
-		new("On", MicLed.On),
-		new("Pulse", MicLed.Pulse)
 	];
 
 	[ObservableProperty]
@@ -120,21 +104,6 @@ public sealed partial class LightingViewModel : ObservableObject
 	{
 		get => Lighting.LowBatteryFlash;
 		set => UpdateLighting(l => l with { LowBatteryFlash = value });
-	}
-
-	public bool MuteButtonMutesMic
-	{
-		get => Lighting.MuteButtonMutesMic;
-		set => UpdateLighting(l => l with { MuteButtonMutesMic = value });
-	}
-
-	// Shown instead of the mute-light choice while the Mute button drives the microphone.
-	public string MicHint => micMute?.IsMicMuted == null ? "No microphone found." : "Shows whether your microphone is muted.";
-
-	public MicLedChoice SelectedMicLed
-	{
-		get => MicLedChoices.First(c => c.MicLed == Lighting.MicLed);
-		set => UpdateLighting(l => l with { MicLed = value.MicLed });
 	}
 
 	// 0-360; with Saturation it picks a custom colour at full value (brightness is separate).
@@ -218,9 +187,7 @@ public sealed partial class LightingViewModel : ObservableObject
 		OnPropertyChanged(nameof(Brightness));
 		OnPropertyChanged(nameof(SelectedPlayerLeds));
 		OnPropertyChanged(nameof(SelectedPlayerLedBrightness));
-		OnPropertyChanged(nameof(SelectedMicLed));
 		OnPropertyChanged(nameof(LowBatteryFlash));
-		OnPropertyChanged(nameof(MuteButtonMutesMic));
 		OnPropertyChanged(nameof(ColourApplies));
 		RefreshPreview();
 	}

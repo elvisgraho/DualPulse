@@ -105,28 +105,6 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card">
-        <StackPanel Spacing="16">
-          <TextBlock Classes="caption" Text="MUTE BUTTON" />
-          <Grid ColumnDefinitions="*,16,Auto">
-            <StackPanel Spacing="2">
-              <TextBlock Text="Mute button mutes the microphone" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding MicHint}" IsVisible="{Binding MuteButtonMutesMic}" />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding MuteButtonMutesMic}" />
-          </Grid>
-          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding !MuteButtonMutesMic}">
-            <TextBlock VerticalAlignment="Center" Text="Mute light" />
-            <ComboBox Grid.Column="2" MinWidth="180" ItemsSource="{Binding MicLedChoices}" SelectedItem="{Binding SelectedMicLed}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:MicLedChoice">
-                  <TextBlock Text="{Binding Label}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-        </StackPanel>
-      </Border>
     </StackPanel>
     </Grid>
   </ScrollViewer>

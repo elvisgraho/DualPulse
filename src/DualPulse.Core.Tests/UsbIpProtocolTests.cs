@@ -167,6 +167,24 @@ public sealed class UsbIpProtocolTests
 	}
 
 	[Fact]
+	public void ReturnSubmit_IsochronousIn_ShortPackets_ReportTheirLengths_DataPacked()
+	{
+		MemoryStream stream = new();
+		UrbSubmit submit = new(9, 0, true, 2, 0, 8, 100, 2, 1, new byte[8], [], [(0, 4), (4, 4)]);
+
+		UsbIpProtocol.WriteReturnSubmit(stream, submit, UrbResult.Ok([1, 2, 3, 4, 5]) with { IsoActualLengths = [3, 2] });
+
+		byte[] ret = stream.ToArray();
+		Assert.Equal(48 + 5 + 32, ret.Length);
+		Assert.Equal(5, BinaryPrimitives.ReadInt32BigEndian(ret.AsSpan(24)));
+		Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, ret[48..53]);
+		Assert.Equal(0, BinaryPrimitives.ReadInt32BigEndian(ret.AsSpan(53)));
+		Assert.Equal(3, BinaryPrimitives.ReadInt32BigEndian(ret.AsSpan(53 + 8)));
+		Assert.Equal(4, BinaryPrimitives.ReadInt32BigEndian(ret.AsSpan(53 + 16)));
+		Assert.Equal(2, BinaryPrimitives.ReadInt32BigEndian(ret.AsSpan(53 + 16 + 8)));
+	}
+
+	[Fact]
 	public void ReturnSubmit_Isochronous_CarriesTheStartFrameTheDeviceChose()
 	{
 		// The host schedules its next transfer from the frame the device reports, so it must not just echo the request.

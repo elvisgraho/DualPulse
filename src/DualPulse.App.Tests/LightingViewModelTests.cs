@@ -22,7 +22,6 @@ public sealed class LightingViewModelTests
 		Assert.Equal(["Static", "Breathing", "Rainbow", "Battery"], viewModel.ModeChoices.Select(c => c.Label));
 		Assert.Equal(["Off", "Player 1", "Player 2", "Player 3", "Player 4", "All", "Battery level"], viewModel.PlayerLedChoices.Select(c => c.Label));
 		Assert.Equal(["High", "Medium", "Low"], viewModel.PlayerLedBrightnessChoices.Select(c => c.Label));
-		Assert.Equal(["Off", "On", "Pulse"], viewModel.MicLedChoices.Select(c => c.Label));
 		Assert.Equal(6, viewModel.Swatches.Count);
 	}
 
@@ -87,14 +86,12 @@ public sealed class LightingViewModelTests
 		viewModel.Brightness = 40;
 		viewModel.SelectedPlayerLeds = viewModel.PlayerLedChoices[5];
 		viewModel.SelectedPlayerLedBrightness = viewModel.PlayerLedBrightnessChoices[2];
-		viewModel.SelectedMicLed = viewModel.MicLedChoices[2];
 
 		LightingSettings lighting = settings.Current.EffectiveLighting;
 		Assert.Equal(LightbarMode.Breathing, lighting.Mode);
 		Assert.Equal(40, lighting.Brightness);
 		Assert.Equal(PlayerLedPattern.All, lighting.PlayerLeds);
 		Assert.Equal(LedBrightness.Low, lighting.PlayerLedBrightness);
-		Assert.Equal(MicLed.Pulse, lighting.MicLed);
 	}
 
 	[Fact]
@@ -128,29 +125,13 @@ public sealed class LightingViewModelTests
 	}
 
 	[Fact]
-	public void Lighting_FlashAndMicSwitches_Persist()
+	public void Lighting_FlashSwitch_Persists()
 	{
 		LightingViewModel viewModel = CreateViewModel();
 		Assert.True(viewModel.LowBatteryFlash);
-		Assert.True(viewModel.MuteButtonMutesMic);
 
 		viewModel.LowBatteryFlash = false;
-		viewModel.MuteButtonMutesMic = false;
 
 		Assert.False(settings.Current.EffectiveLighting.LowBatteryFlash);
-		Assert.False(settings.Current.EffectiveLighting.MuteButtonMutesMic);
-	}
-
-	[Fact]
-	public void Lighting_MicHint_SaysWhetherThereIsAMicrophone()
-	{
-		FakeMicrophone mic = new();
-		using MicMuteService micMute = new(controller, settings, mic);
-		LightingViewModel viewModel = new(settings, controller, micMute);
-		Assert.Equal("Shows whether your microphone is muted.", viewModel.MicHint);
-
-		mic.SetFromWindows(null);
-
-		Assert.Equal("No microphone found.", viewModel.MicHint);
 	}
 }

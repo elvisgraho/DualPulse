@@ -13,13 +13,14 @@ public enum ControllerSection
 	Sticks,
 	Rumble,
 	Gyro,
-	Audio
+	Audio,
+	Microphone
 }
 
 // One selector entry; Exe is null for Default. Only name and exe, so editing a profile doesn't replace its entry.
 public sealed record ProfileChoice(string Label, string? Exe);
 
-// The Controller page: Lighting, Triggers, Sticks, Rumble, Gyro and Audio, chosen with chips at the top. They only change what the
+// The Controller page: Lighting, Triggers, Sticks, Rumble, Gyro, Audio and Microphone, chosen with chips at the top. They only change what the
 // controller itself does (lights, trigger feel, motors, motion aiming), so they share one rail entry. The profile
 // selector picks what Triggers, Sticks and Gyro edit: Default, or a game's profile (added by picking a running program).
 public sealed partial class ControllerPageViewModel : ObservableObject
@@ -34,8 +35,9 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	public ControllerPageViewModel(LightingViewModel? lighting = null, TriggersViewModel? triggers = null, RumbleViewModel? rumble = null,
 		GyroViewModel? gyro = null, ProfileSelection? selection = null, ISettingsService? settings = null, IRunningWindows? windows = null,
-		AudioViewModel? audio = null, SticksViewModel? sticks = null)
+		AudioViewModel? audio = null, SticksViewModel? sticks = null, MicrophoneViewModel? microphone = null)
 	{
+		Microphone = microphone;
 		Sticks = sticks;
 		Audio = audio;
 		Lighting = lighting;
@@ -64,8 +66,10 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	public AudioViewModel? Audio { get; }
 
+	public MicrophoneViewModel? Microphone { get; }
+
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(IsLighting), nameof(IsTriggers), nameof(IsSticks), nameof(IsRumble), nameof(IsGyro), nameof(IsAudio), nameof(ShowSameForAllGames))]
+	[NotifyPropertyChangedFor(nameof(IsLighting), nameof(IsTriggers), nameof(IsSticks), nameof(IsRumble), nameof(IsGyro), nameof(IsAudio), nameof(IsMicrophone), nameof(ShowSameForAllGames))]
 	public partial ControllerSection CurrentSection { get; set; } = ControllerSection.Lighting;
 
 	public bool IsLighting => CurrentSection == ControllerSection.Lighting;
@@ -79,6 +83,8 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 	public bool IsGyro => CurrentSection == ControllerSection.Gyro;
 
 	public bool IsAudio => CurrentSection == ControllerSection.Audio;
+
+	public bool IsMicrophone => CurrentSection == ControllerSection.Microphone;
 
 	public bool HasProfiles => selection != null;
 
@@ -115,7 +121,7 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 	public bool IsActiveNow => selection?.IsActive(selection.Selected) == true;
 
 	// Lighting, Rumble and Audio are not part of a profile; they say so while a profile is selected.
-	public bool ShowSameForAllGames => selection?.Selected != null && (IsLighting || IsRumble || IsAudio);
+	public bool ShowSameForAllGames => selection?.Selected != null && (IsLighting || IsRumble || IsAudio || IsMicrophone);
 
 	public bool CanRemove => selection?.Selected != null;
 

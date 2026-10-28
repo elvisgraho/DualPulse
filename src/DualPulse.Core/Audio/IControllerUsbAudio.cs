@@ -5,7 +5,21 @@ namespace DualPulse.Core.Audio;
 public interface IControllerUsbAudio
 {
 	IControllerAudioStream? Open();
+
+	// The controller's own microphone, handed over as it records until disposed; null when there is none.
+	IDisposable? OpenMicrophone(MicrophoneBlock blocks) => null;
+
+	// The names Windows shows for the controller's own microphone and for the virtual DualSense's (null when absent).
+	(string? Real, string? Virtual) MicrophoneNames() => (null, null);
+
+	// The controller microphone's Windows input volume, 0-100; null when there is none.
+	int? MicrophoneVolume() => null;
+
+	bool SetMicrophoneVolume(int percent) => false;
 }
+
+// Interleaved 16-bit stereo at 48 kHz from a microphone; raised on its capture thread.
+public delegate void MicrophoneBlock(ReadOnlySpan<short> stereo);
 
 // Interleaved 16-bit samples at 48 kHz into the controller; written from the game audio thread.
 public interface IControllerAudioStream : IDisposable

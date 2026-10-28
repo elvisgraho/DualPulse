@@ -35,6 +35,10 @@ public sealed record UrbResult(int Status, byte[] Data)
 {
 	public int? StartFrame { get; init; }
 
+	// Isochronous IN: how many bytes each packet really carries (Data holds them back to back); null when every
+	// packet is full.
+	public int[]? IsoActualLengths { get; init; }
+
 	public static readonly UrbResult Stall = new(-32, []);
 
 	public static UrbResult Ok(byte[] data) => new(0, data);
@@ -172,12 +176,13 @@ public static class UsbIpProtocol
 	}
 
 	// Completes a submit. Isochronous: every packet is reported done in full (OUT: accepted; IN: result.Data holds
-	// the whole buffer, packet after packet).
+	// the whole buffer, packet after packet), unless the result gives each IN packet's length (Data packed).
 	public static void WriteReturnSubmit(Stream stream, UrbSubmit submit, UrbResult result)
 	{
 		byte[] data = submit.In ? result.Data : [];
+		int[]? lengths = submit.In && submit.IsIsochronous && result.Status == 0 ? result.IsoActualLengths : null;
 		int actual = submit.IsIsochronous
-			? (result.Status == 0 ? submit.IsoPackets.Sum(p => p.Length) : 0)
+			? (result.Status == 0 ? lengths?.Sum() ?? submit.IsoPackets.Sum(p => p.Length) : 0)
 			: (submit.In ? data.Length : (result.Status == 0 ? submit.Data.Length : 0));
 		byte[] header = new byte[HeaderLength];
 		BinaryPrimitives.WriteUInt32BigEndian(header, ReturnSubmit);
@@ -199,7 +204,7 @@ public static class UsbIpProtocol
 				(int offset, int length) = submit.IsoPackets[i];
 				BinaryPrimitives.WriteInt32BigEndian(descriptors.AsSpan(i * 16), offset);
 				BinaryPrimitives.WriteInt32BigEndian(descriptors.AsSpan(i * 16 + 4), length);
-				BinaryPrimitives.WriteInt32BigEndian(descriptors.AsSpan(i * 16 + 8), result.Status == 0 ? length : 0);
+				BinaryPrimitives.WriteInt32BigEndian(descriptors.AsSpan(i * 16 + 8), result.Status == 0 ? lengths?[i] ?? length : 0);
 			}
 			stream.Write(descriptors);
 		}

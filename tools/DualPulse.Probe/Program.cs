@@ -480,6 +480,49 @@ if (args.Length >= 1 && args[0] == "audio-devices")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "mics")
+{
+	// Lists the DualSense microphones (real or DualPulse's virtual one), their format and mute, and records 3 s from
+	// each: peak level and how evenly the blocks arrive.
+	using NAudio.CoreAudioApi.MMDeviceEnumerator enumerator = new();
+	foreach (NAudio.CoreAudioApi.MMDevice device in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
+	{
+		if (!device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+		{
+			continue;
+		}
+		bool isVirtual = DualPulse.Emulation.WindowsControllerUsbAudio.IsVirtual(device);
+		NAudio.Wave.WaveFormat format = device.AudioClient.MixFormat;
+		Console.WriteLine($"{device.FriendlyName}: {(isVirtual ? "VIRTUAL" : "real")}, {format.SampleRate} Hz, {format.Channels} ch, {format.BitsPerSample} bit, muted={device.AudioEndpointVolume.Mute}, volume={device.AudioEndpointVolume.MasterVolumeLevelScalar:0.00}");
+		using NAudio.CoreAudioApi.WasapiCapture capture = new(device, false, 20);
+		float peak = 0;
+		long bytes = 0;
+		int blocks = 0;
+		System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+		double last = 0, worstGap = 0;
+		capture.DataAvailable += (_, e) =>
+		{
+			blocks++;
+			bytes += e.BytesRecorded;
+			double now = clock.Elapsed.TotalMilliseconds;
+			if (blocks > 1)
+			{
+				worstGap = Math.Max(worstGap, now - last);
+			}
+			last = now;
+			foreach (float sample in System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(e.Buffer.AsSpan(0, e.BytesRecorded)))
+			{
+				peak = Math.Max(peak, Math.Abs(sample));
+			}
+		};
+		capture.StartRecording();
+		Thread.Sleep(3000);
+		capture.StopRecording();
+		double seconds = clock.Elapsed.TotalSeconds;
+		Console.WriteLine($"  3 s: peak {peak:0.000}, {bytes / (double)capture.WaveFormat.AverageBytesPerSecond / seconds * 100:0}% of real time, {blocks} blocks, worst gap {worstGap:0} ms");
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "audio-level")
 {
 	// Prints the loopback level (peak per half second) of what Windows is playing, for 5 s.

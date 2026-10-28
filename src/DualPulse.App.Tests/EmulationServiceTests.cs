@@ -20,6 +20,8 @@ public sealed class EmulationServiceTests : IDisposable
 
 	private readonly FakeUsbAudio usbAudio = new();
 
+	private readonly VirtualMicrophoneMonitor microphoneMonitor = new();
+
 	private readonly FakeNotifier notifier = new();
 
 	private readonly FakeSettingsService settings;
@@ -44,7 +46,7 @@ public sealed class EmulationServiceTests : IDisposable
 		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
 		rumble = new RumbleService(controller, settings, time);
 		emulation = new EmulationService(controller, backend, settings, rumble, NullLogger<EmulationService>.Instance, time: time, padWorker: Inline,
-			usbAudio: usbAudio, notifier: notifier);
+			usbAudio: usbAudio, notifier: notifier, microphoneMonitor: microphoneMonitor);
 	}
 
 	public void Dispose()
@@ -414,6 +416,69 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task OnUsb_RecordingFromTheVirtualMicrophone_UsesTheControllersOwn()
+	{
+		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
+
+		pad.SetMicrophoneOpen(true);
+		TestReports.WaitUntil(() => usbAudio.Microphone != null);
+		usbAudio.Microphone!.Feed([1, 2, 3, 4]);
+
+		Assert.Equal([1, 2, 3, 4], pad.MicrophoneWritten);
+	}
+
+	[Fact]
+	public async Task OnUsb_Recording_ShowsInTheMonitor_WithWhatTheGameGets()
+	{
+		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
+		Assert.False(microphoneMonitor.InUse);
+
+		pad.SetMicrophoneOpen(true);
+		TestReports.WaitUntil(() => usbAudio.Microphone != null);
+		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)16384, 2 * 1200).ToArray());
+
+		Assert.True(microphoneMonitor.InUse);
+		Assert.Equal(0.5f, microphoneMonitor.Levels.Snapshot()[^1], 3);
+
+		pad.SetMicrophoneOpen(false);
+		TestReports.WaitUntil(() => !microphoneMonitor.InUse);
+	}
+
+	[Fact]
+	public async Task OnUsb_RecordingStops_TheControllersMicrophoneIsClosed()
+	{
+		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
+		pad.SetMicrophoneOpen(true);
+		TestReports.WaitUntil(() => usbAudio.Microphone != null);
+
+		pad.SetMicrophoneOpen(false);
+
+		TestReports.WaitUntil(() => usbAudio.Microphone!.Disposed);
+	}
+
+	[Fact]
+	public async Task OnUsb_TheVirtualPadGoing_ClosesTheControllersMicrophone()
+	{
+		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
+		pad.SetMicrophoneOpen(true);
+		TestReports.WaitUntil(() => usbAudio.Microphone != null);
+
+		settings.Update(s => s with { Emulation = null });
+
+		TestReports.WaitUntil(() => usbAudio.Microphone!.Disposed);
+	}
+
+	[Fact]
+	public async Task OnBluetooth_RecordingFromTheVirtualMicrophone_OpensNothing()
+	{
+		(_, FakeDualSensePad pad) = await ConnectDualSenseAsync();
+
+		pad.SetMicrophoneOpen(true);
+
+		Assert.Null(usbAudio.Microphone);
+	}
+
+	[Fact]
 	public async Task OnBluetooth_TheControllersUsbSoundDeviceIsntUsed()
 	{
 		(_, FakeDualSensePad pad) = await ConnectDualSenseAsync();
@@ -428,6 +493,19 @@ public sealed class EmulationServiceTests : IDisposable
 		public FakeUsbStream? Stream { get; private set; }
 
 		public IControllerAudioStream? Open() => Stream = new FakeUsbStream();
+
+		public FakeMicrophone? Microphone { get; private set; }
+
+		public IDisposable? OpenMicrophone(MicrophoneBlock blocks) => Microphone = new FakeMicrophone(blocks);
+	}
+
+	private sealed class FakeMicrophone(MicrophoneBlock blocks) : IDisposable
+	{
+		public bool Disposed { get; private set; }
+
+		public void Feed(short[] stereo) => blocks(stereo);
+
+		public void Dispose() => Disposed = true;
 	}
 
 	private sealed class FakeUsbStream : IControllerAudioStream

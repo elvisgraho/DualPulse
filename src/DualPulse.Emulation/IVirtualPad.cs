@@ -41,6 +41,7 @@ public delegate void GameAudio(ReadOnlySpan<short> samples, int channels);
 // A virtual DualSense: besides input, it hands over what the game sends to it. OutputBlock is the 47-byte common
 // output block (triggers, lights, audio control, ...); Haptics is the rear voice-coil pair (2 channels); Speaker is
 // the 4-channel speaker stream (channels 1-2 speaker). Lost: the virtual device went away. Raised on background threads.
+// Its microphone plays what WriteMicrophone is given.
 public interface IDualSensePad : IVirtualPad
 {
 	event Action? Lost;
@@ -53,6 +54,14 @@ public interface IDualSensePad : IVirtualPad
 	event GameAudio? Haptics;
 
 	event GameAudio? Speaker;
+
+	// True while the host records from the pad's microphone (raised when that changes).
+	event Action<bool>? MicrophoneOpened;
+
+	bool IsMicrophoneOpen { get; }
+
+	// Interleaved 16-bit stereo at 48 kHz for the pad's microphone.
+	void WriteMicrophone(ReadOnlySpan<short> stereo);
 }
 
 // Routes each pad kind to the backend that can create it: DualSense to the USB/IP one, the others to ViGEm.

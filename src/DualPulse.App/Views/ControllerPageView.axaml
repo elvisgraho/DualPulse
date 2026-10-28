@@ -23,6 +23,8 @@
                   Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Gyro}" />
           <Button Classes="chip" Classes.selected="{Binding IsAudio}" Content="Audio"
                   Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Audio}" />
+          <Button Classes="chip" Classes.selected="{Binding IsMicrophone}" Content="Microphone"
+                  Command="{Binding SelectCommand}" CommandParameter="{x:Static vm:ControllerSection.Microphone}" />
         </StackPanel>
       </StackPanel>
 
@@ -89,6 +91,7 @@
       <views:RumbleView DataContext="{Binding Rumble}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsRumble}" />
       <views:GyroView DataContext="{Binding Gyro}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsGyro}" />
       <views:AudioView DataContext="{Binding Audio}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsAudio}" />
+      <views:MicrophoneView DataContext="{Binding Microphone}" IsVisible="{Binding $parent[UserControl].((vm:ControllerPageViewModel)DataContext).IsMicrophone}" />
     </Panel>
   </Grid>
 </UserControl>
