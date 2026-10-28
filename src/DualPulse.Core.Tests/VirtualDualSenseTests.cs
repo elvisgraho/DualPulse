@@ -260,18 +260,59 @@ public sealed class VirtualDualSenseTests
 	public void Microphone_CarriesWhatWasFed_48FramesPerPacket()
 	{
 		// 48 kHz stereo: one 1 ms packet is 48 frames (192 bytes), whatever room the host leaves.
-		short[] fed = [.. Enumerable.Range(1, 2 * 96).Select(i => (short)i)];
+		short[] fed = [.. Enumerable.Range(1, 2 * 480).Select(i => (short)i)];
 		pacedDevice.WriteMicrophone(fed);
 		UrbResult? result = null;
 
-		pacedDevice.Submit(MicTransfer(3, 196), r => result = r);
-		time.Advance(TimeSpan.FromMilliseconds(3));
+		pacedDevice.Submit(MicTransfer(12, 196), r => result = r);
+		time.Advance(TimeSpan.FromMilliseconds(12));
 
-		Assert.Equal(Enumerable.Repeat(192, 3), result!.IsoActualLengths!);
+		Assert.Equal(Enumerable.Repeat(192, 12), result!.IsoActualLengths!);
 		short[] samples = new short[result.Data.Length / 2];
 		Buffer.BlockCopy(result.Data, 0, samples, 0, result.Data.Length);
 		Assert.Equal(fed, samples[..fed.Length]);
 		Assert.All(samples[fed.Length..], s => Assert.Equal(0, s));
+	}
+
+	[Fact]
+	public void Microphone_TransfersQueuedAhead_CarrySoundThatArrivesBeforeTheirTime()
+	{
+		// The host queues transfers ahead; the microphone's sound for later ones arrives while earlier ones play.
+		UrbResult? first = null, second = null;
+		pacedDevice.Submit(MicTransfer(10, 196), r => first = r);
+		pacedDevice.Submit(MicTransfer(10, 196), r => second = r);
+
+		pacedDevice.WriteMicrophone(Enumerable.Repeat((short)1000, 2 * 480).ToArray());
+		time.Advance(TimeSpan.FromMilliseconds(10));
+		pacedDevice.WriteMicrophone(Enumerable.Repeat((short)2000, 2 * 480).ToArray());
+		time.Advance(TimeSpan.FromMilliseconds(10));
+
+		Assert.All(Samples(first!), s => Assert.Equal(1000, s));
+		Assert.All(Samples(second!), s => Assert.Equal(2000, s));
+	}
+
+	[Fact]
+	public void Microphone_AfterRunningDry_WaitsFor10msOfSound()
+	{
+		// Starting again on a few samples would run dry at once and crackle.
+		pacedDevice.WriteMicrophone(Enumerable.Repeat((short)1000, 2 * 200).ToArray());
+		UrbResult? waiting = null, playing = null;
+
+		pacedDevice.Submit(MicTransfer(10, 196), r => waiting = r);
+		time.Advance(TimeSpan.FromMilliseconds(10));
+		pacedDevice.WriteMicrophone(Enumerable.Repeat((short)1000, 2 * 400).ToArray());
+		pacedDevice.Submit(MicTransfer(10, 196), r => playing = r);
+		time.Advance(TimeSpan.FromMilliseconds(10));
+
+		Assert.All(Samples(waiting!), s => Assert.Equal(0, s));
+		Assert.All(Samples(playing!), s => Assert.Equal(1000, s));
+	}
+
+	private static short[] Samples(UrbResult result)
+	{
+		short[] samples = new short[result.Data.Length / 2];
+		Buffer.BlockCopy(result.Data, 0, samples, 0, result.Data.Length);
+		return samples;
 	}
 
 	[Fact]
