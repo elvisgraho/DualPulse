@@ -23,43 +23,55 @@ public sealed class ControllerView : Control
 
 	private const double StickTravel = 13;
 
+	// The outer shell: a wide top, rounded shoulders and long grips that splay outwards.
 	private static readonly Geometry Body = Geometry.Parse(
-		"M 110,46 H 290 C 330,46 352,62 362,100 L 384,200 C 392,238 368,258 344,250 C 326,244 316,226 304,206 L 290,182 H 110 " +
-		"L 96,206 C 84,226 74,244 56,250 C 32,258 8,238 16,200 L 38,100 C 48,62 70,46 110,46 Z");
+		"M 200,40 C 250,40 300,38 330,44 C 362,50 378,72 384,104 L 392,196 C 396,236 376,258 350,254 C 330,251 318,236 306,216 " +
+		"L 290,190 C 260,186 240,184 200,184 C 160,184 140,186 110,190 L 94,216 C 82,236 70,251 50,254 C 24,258 4,236 8,196 " +
+		"L 16,104 C 22,72 38,50 70,44 C 100,38 150,40 200,40 Z");
+
+	// The dark centre panel holding the D-pad, face buttons and sticks; it rises along both sides of the touchpad.
+	private static readonly Geometry Core = Geometry.Parse(
+		"M 58,84 C 72,70 108,68 130,74 L 140,112 C 142,120 146,122 154,122 L 246,122 C 254,122 258,120 260,112 L 270,74 " +
+		"C 292,68 328,70 342,84 C 358,100 362,130 352,152 C 344,168 326,178 302,186 L 290,190 C 260,186 240,184 200,184 " +
+		"C 160,184 140,186 110,190 L 98,186 C 74,178 56,168 48,152 C 38,130 42,100 58,84 Z");
+
+	// The touchpad, slightly narrower at the bottom; Touchpad is its box, for placing touch points.
+	private static readonly Geometry TouchpadShape = Geometry.Parse(
+		"M 140,46 L 260,46 C 264,46 266,48 265.5,52 L 258,108 C 257,114 254,117 248,117 L 152,117 C 146,117 143,114 142,108 L 134.5,52 C 134,48 136,46 140,46 Z");
+
+	private static readonly Rect Touchpad = new(140, 48, 120, 66);
+
+	// The light strips run down the touchpad's lower sides, on the seam with the centre panel, and curve under its corners.
+	private static readonly Geometry LeftLight = Geometry.Parse("M 131,60 L 137,107 C 138.5,117 143,121 154,121");
+
+	private static readonly Geometry RightLight = Geometry.Parse("M 269,60 L 263,107 C 261.5,117 257,121 246,121");
 
 	// The cable leaves the plug upwards with a slight bend (past the top of the design space; the control does not clip).
-	private static readonly Geometry Cable = Geometry.Parse("M 200,30 C 200,6 222,4 226,-40");
+	private static readonly Geometry Cable = Geometry.Parse("M 200,24 C 200,0 222,-2 226,-46");
 
-	private static readonly Rect Plug = new(191, 29, 18, 17);
-
-	private static readonly Rect Touchpad = new(140, 52, 120, 62);
+	private static readonly Rect Plug = new(191, 24, 18, 17);
 
 	// Bumpers and triggers sit behind the shell's shoulders; only their tops show.
-	private static readonly Rect L1 = new(70, 32, 72, 26);
+	private static readonly Rect L1 = new(64, 30, 74, 26);
 
-	private static readonly Rect R1 = new(258, 32, 72, 26);
+	private static readonly Rect R1 = new(262, 30, 74, 26);
 
-	private static readonly Rect L2 = new(76, 12, 62, 36);
+	private static readonly Rect L2 = new(70, 10, 64, 36);
 
-	private static readonly Rect R2 = new(262, 12, 62, 36);
+	private static readonly Rect R2 = new(266, 10, 64, 36);
 
 	// How much of a trigger shows above its bumper; the pressure fill rises through it.
 	private const double TriggerShows = 20;
 
-	// The light strips run down each side of the touchpad and curve under its lower corners.
-	private static readonly Geometry LeftLight = Geometry.Parse("M 134,64 L 134,103 A 16,16 0 0 0 150,119 L 156,119");
+	private static readonly Point DpadCentre = new(88, 112);
 
-	private static readonly Geometry RightLight = Geometry.Parse("M 266,64 L 266,103 A 16,16 0 0 1 250,119 L 244,119");
+	private static readonly Point FaceCentre = new(312, 112);
 
-	private static readonly Point DpadCentre = new(95, 108);
+	private static readonly Point LeftStick = new(150, 154);
 
-	private static readonly Point FaceCentre = new(305, 108);
+	private static readonly Point RightStick = new(250, 154);
 
-	private static readonly Point LeftStick = new(152, 150);
-
-	private static readonly Point RightStick = new(248, 150);
-
-	private static readonly Point PsButton = new(200, 142);
+	private static readonly Point PsButton = new(200, 152);
 
 	private IBrush accent = Brushes.Goldenrod;
 
@@ -74,6 +86,8 @@ public sealed class ControllerView : Control
 	private IBrush stickCap = Brushes.Gray;
 
 	private IBrush part = Brushes.Gray;
+
+	private IBrush core = Brushes.Black;
 
 	private IPen outline = new Pen(Brushes.Gray, 1.2);
 
@@ -118,10 +132,12 @@ public sealed class ControllerView : Control
 		accentMuted = Resource("AccentMuted");
 		Color raised = ColourOf("SurfaceRaised");
 		Color background = ColourOf("Bg");
-		body = Vertical(Mix(raised, Colors.White, 0.09), Mix(raised, Colors.Black, 0.12));
+		// Two tones: a grey shell around a near-black centre panel.
+		body = Vertical(Mix(raised, Colors.White, 0.17), Mix(raised, Colors.White, 0.03));
+		core = Vertical(Mix(background, Colors.White, 0.05), Mix(background, Colors.Black, 0.1));
 		well = Vertical(Mix(background, Colors.Black, 0.2), Mix(background, Colors.White, 0.04));
 		part = Vertical(Mix(raised, Colors.White, 0.06), Mix(raised, Colors.Black, 0.3));
-		touchpad = Vertical(Mix(raised, Colors.Black, 0.25), Mix(raised, Colors.Black, 0.45));
+		touchpad = Vertical(Mix(raised, Colors.White, 0.22), Mix(raised, Colors.White, 0.1));
 		stickCap = new RadialGradientBrush
 		{
 			Center = new RelativePoint(0.4, 0.35, RelativeUnit.Relative),
@@ -165,11 +181,13 @@ public sealed class ControllerView : Control
 		DrawShoulder(context, R1, buttons.HasFlag(Buttons.R1));
 
 		DrawShell(context);
+		context.DrawGeometry(core, edge, Core);
 		DrawTouchpad(context, input, buttons.HasFlag(Buttons.Touchpad));
 		DrawLightbar(context);
 
-		DrawPill(context, new Rect(122, 56, 7, 14), buttons.HasFlag(Buttons.Create));
-		DrawPill(context, new Rect(271, 56, 7, 14), buttons.HasFlag(Buttons.Options));
+		DrawAngledPill(context, new Point(124, 60), -18, buttons.HasFlag(Buttons.Create));
+		DrawAngledPill(context, new Point(276, 60), 18, buttons.HasFlag(Buttons.Options));
+		DrawSpeaker(context);
 
 		DrawDpad(context, buttons);
 
@@ -182,8 +200,8 @@ public sealed class ControllerView : Control
 		DrawStick(context, RightStick, input.RightX, input.RightY, buttons.HasFlag(Buttons.R3));
 
 		bool ps = buttons.HasFlag(Buttons.Ps);
-		context.DrawEllipse(ps ? accent : well, ps ? activeEdge : edge, PsButton, 6.5, 6.5);
-		DrawPill(context, new Rect(192, 158, 16, 5), buttons.HasFlag(Buttons.Mute));
+		context.DrawEllipse(ps ? accent : well, ps ? activeEdge : edge, PsButton, 7, 7);
+		DrawPill(context, new Rect(192, 166, 16, 5), buttons.HasFlag(Buttons.Mute));
 	}
 
 	private enum FaceSymbol
@@ -210,11 +228,14 @@ public sealed class ControllerView : Control
 
 	private void DrawTouchpad(DrawingContext context, InputSnapshot input, bool pressed)
 	{
-		context.DrawRectangle(touchpad, pressed ? activeEdge : edge, new RoundedRect(Touchpad, 10));
+		context.DrawGeometry(touchpad, pressed ? activeEdge : outline, TouchpadShape);
 		if (pressed)
 		{
 			// The half that clicks (left or right button), as in PC control.
-			context.DrawRectangle(accentMuted, null, new RoundedRect(ControllerLayout.PressedTouchpadArea(input.Touch0, input.Touch1, Touchpad), 10));
+			using (context.PushGeometryClip(TouchpadShape))
+			{
+				context.DrawRectangle(accentMuted, null, ControllerLayout.PressedTouchpadArea(input.Touch0, input.Touch1, new Rect(134, 46, 132, 72)));
+			}
 		}
 		foreach (TouchPoint touch in new[] { input.Touch0, input.Touch1 })
 		{
@@ -262,6 +283,30 @@ public sealed class ControllerView : Control
 				context.DrawRectangle(accent, null, new Rect(rect.X, top, rect.Width, rect.Bottom - top));
 			}
 			context.DrawRectangle(null, activeEdge, shape);
+		}
+	}
+
+	// A small pill tilted by `degrees`, as Create and Options sit beside the touchpad.
+	private void DrawAngledPill(DrawingContext context, Point centre, double degrees, bool pressed)
+	{
+		Matrix tilt = Matrix.CreateTranslation(-centre.X, -centre.Y) * Matrix.CreateRotation(degrees * Math.PI / 180) * Matrix.CreateTranslation(centre.X, centre.Y);
+		using (context.PushTransform(tilt))
+		{
+			DrawPill(context, new Rect(centre.X - 3.5, centre.Y - 7, 7, 14), pressed);
+		}
+	}
+
+	// A small grille of speaker holes above the PS button.
+	private void DrawSpeaker(DrawingContext context)
+	{
+		IBrush hole = new SolidColorBrush(Color.FromArgb(0x90, 0, 0, 0));
+		for (int row = 0; row < 2; row++)
+		{
+			for (int column = 0; column < 5 - row; column++)
+			{
+				double x = 200 + (column - (4 - row) / 2.0) * 5;
+				context.DrawEllipse(hole, null, new Point(x, 131 + row * 4.5), 1.2, 1.2);
+			}
 		}
 	}
 
