@@ -469,11 +469,11 @@ public sealed class EmulationServiceTests : IDisposable
 		pad.SetMicrophoneOpen(true);
 		TestReports.WaitUntil(() => usbAudio.Microphone != null);
 
-		// A short burst of quiet sound: the gate keeps it out.
-		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)30, 2 * 480).ToArray());
+		// Quiet sound (-50 dBFS): the closed gate turns it down 30 dB (and the first 30 ms are the look-ahead).
+		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)100, 2 * 4800).ToArray());
 
-		Assert.Equal(2 * 480, pad.MicrophoneWritten.Count);
-		Assert.All(pad.MicrophoneWritten, s => Assert.Equal(0, s));
+		Assert.Equal(2 * 4800, pad.MicrophoneWritten.Count);
+		Assert.All(pad.MicrophoneWritten, s => Assert.InRange(s, 0, 10));
 	}
 
 	[Fact]

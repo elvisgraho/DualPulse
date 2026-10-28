@@ -17,7 +17,7 @@
           <TextBlock Classes="caption" Text="YOUR CONTROLLER'S MICROPHONE" />
           <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding RealName, StringFormat='In Windows: {0}'}"
                      IsVisible="{Binding RealName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <controls:Waveform Height="64" Peaks="{Binding RealPeaks}" Progress="{Binding RealProgress}" />
+          <controls:Waveform Height="64" Peaks="{Binding RealPeaks}" Progress="{Binding RealProgress}" Threshold="{Binding GateLine}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding Status}" />
           <Grid ColumnDefinitions="Auto,16,*,16,48" IsVisible="{Binding HasVolume}">
             <TextBlock VerticalAlignment="Center" Text="Volume" />
@@ -38,9 +38,15 @@
           <Grid ColumnDefinitions="*,16,Auto">
             <StackPanel Spacing="2">
               <TextBlock Text="Noise gate" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Silent between words; ignores mouth clicks." />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Quiet between words; ignores mouth clicks. The dashed line above shows where it opens." />
             </StackPanel>
             <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding NoiseGate}" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,56" IsVisible="{Binding NoiseGate}">
+            <TextBlock VerticalAlignment="Center" Text="Opens at" />
+            <Slider Grid.Column="2" Minimum="-70" Maximum="-20" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GateThresholdDb}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding GateThresholdDb, StringFormat='{}{0} dB'}" />
           </Grid>
           <Grid ColumnDefinitions="Auto,16,*,16,56">
             <TextBlock VerticalAlignment="Center" Text="Boost" />

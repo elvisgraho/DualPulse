@@ -507,13 +507,14 @@ if (args.Length >= 1 && args[0] == "mic-vs-output")
 	Console.WriteLine($"output {played.Count / 48000.0:0.00} s at {Level(played):0.0} dBFS (loopback {loopback.SampleRate} Hz), microphone {heard.Count / 48000.0:0.00} s at {Level(heard):0.0} dBFS");
 	// Normalised cross-correlation over lags 0-200 ms (microphone later than the output), on the middle 3 s.
 	int start = 48000, length = Math.Min(3 * 48000, Math.Min(played.Count, heard.Count) - start - 9600);
+	start = Math.Max(start, 9600);
 	if (length <= 0)
 	{
 		return 0;
 	}
 	double best = 0;
 	int bestLag = 0;
-	for (int lag = -480; lag <= 9600; lag += 4)
+	for (int lag = -9600; lag <= 9600; lag += 4)
 	{
 		double dot = 0, a = 0, b = 0;
 		for (int i = start; i < start + length; i += 2)
@@ -530,23 +531,60 @@ if (args.Length >= 1 && args[0] == "mic-vs-output")
 			bestLag = lag;
 		}
 	}
-	Console.WriteLine($"best match {best:0.00} (1 = identical) with the microphone {bestLag / 48.0:0.0} ms later");
+	Console.WriteLine(bestLag >= 0 ? $"best match {best:0.00} (1 = identical): the microphone hears the output {bestLag / 48.0:0.0} ms later" : $"best match {best:0.00} (1 = identical): the output plays the microphone {-bestLag / 48.0:0.0} ms later");
+	return 0;
+}
+if (args.Length >= 1 && args[0] == "mic-noise")
+{
+	// The controller microphone's level in 5 ms slices over 8 s: percentiles, to see how room noise behaves.
+	List<double> levels = [];
+	double energy = 0;
+	int fill = 0;
+	DualPulse.Emulation.WindowsControllerUsbAudio audio = new();
+	using (IDisposable? mic = audio.OpenMicrophone(stereo =>
+	{
+		for (int i = 0; i + 1 < stereo.Length; i += 2)
+		{
+			double mono = (stereo[i] + stereo[i + 1]) / 2.0;
+			energy += mono * mono;
+			if (++fill == 240)
+			{
+				levels.Add(10 * Math.Log10(energy / 240 / (32767.0 * 32767) + 1e-12));
+				energy = 0;
+				fill = 0;
+			}
+		}
+	}))
+	{
+		if (mic == null)
+		{
+			return 1;
+		}
+		Thread.Sleep(8000);
+	}
+	List<double> sorted = [.. levels.Skip(100).Order()];
+	string P(double q) => sorted[(int)(q * (sorted.Count - 1))].ToString("0.0");
+	Console.WriteLine($"{sorted.Count} slices: min {P(0)}, 1% {P(0.01)}, 10% {P(0.1)}, median {P(0.5)}, 90% {P(0.9)}, 99% {P(0.99)}, max {P(1)} dBFS");
 	return 0;
 }
 if (args.Length >= 1 && args[0] == "mic-gate")
 {
 	// Records the controller's microphone for 8 s through the noise gate: how much of the time it was open.
 	DualPulse.Core.Audio.MicrophoneProcessor gate = new() { NoiseGate = true };
-	int frames = 0, openFrames = 0;
+	int frames = 0, openFrames = 0, opens = 0;
+	bool wasOpen = false;
 	DualPulse.Emulation.WindowsControllerUsbAudio audio = new();
-	using (IDisposable? mic = audio.OpenMicrophone(stereo => gate.Process(stereo, output =>
+	using (IDisposable? mic = audio.OpenMicrophone(stereo =>
 	{
-		for (int i = 0; i + 1 < output.Length; i += 2)
+		gate.Process(stereo, _ => { });
+		frames += stereo.Length / 2;
+		openFrames += gate.IsOpen ? stereo.Length / 2 : 0;
+		if (gate.IsOpen && !wasOpen)
 		{
-			frames++;
-			openFrames += output[i] != 0 ? 1 : 0;
+			opens++;
 		}
-	})))
+		wasOpen = gate.IsOpen;
+	}))
 	{
 		if (mic == null)
 		{
@@ -555,7 +593,65 @@ if (args.Length >= 1 && args[0] == "mic-gate")
 		}
 		Thread.Sleep(8000);
 	}
-	Console.WriteLine($"{frames / 48000.0:0.0} s, gate open about {openFrames * 100.0 / Math.Max(1, frames):0.0}% of the time");
+	Console.WriteLine($"{frames / 48000.0:0.0} s, gate open about {openFrames * 100.0 / Math.Max(1, frames):0.0}% of the time, opened {opens} times");
+	return 0;
+}
+if (args.Length >= 1 && args[0] == "mic-echo")
+{
+	// Records the real microphone and the virtual one together for 6 s and lines them up: one clear match is a clean
+	// pass-through; further matches at later delays are repeated sound (an echo or loop).
+	using NAudio.CoreAudioApi.MMDeviceEnumerator enumerator = new();
+	NAudio.CoreAudioApi.MMDevice? real = null, virt = null;
+	foreach (NAudio.CoreAudioApi.MMDevice device in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
+	{
+		if (device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+		{
+			if (DualPulse.Emulation.WindowsControllerUsbAudio.IsVirtual(device)) { virt = device; } else { real = device; }
+		}
+	}
+	if (real == null || virt == null)
+	{
+		Console.Error.WriteLine("Need both the real and the virtual microphone.");
+		return 1;
+	}
+	List<float> a = [], b = [];
+	using NAudio.CoreAudioApi.WasapiCapture captureReal = new(real, true, 10), captureVirtual = new(virt, true, 10);
+	void Collect(NAudio.CoreAudioApi.WasapiCapture capture, List<float> into)
+	{
+		int channels = capture.WaveFormat.Channels;
+		capture.DataAvailable += (_, e) =>
+		{
+			ReadOnlySpan<float> samples = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(e.Buffer.AsSpan(0, e.BytesRecorded));
+			lock (into) { for (int i = 0; i + channels <= samples.Length; i += channels) { into.Add(samples[i]); } }
+		};
+	}
+	Collect(captureReal, a);
+	Collect(captureVirtual, b);
+	captureReal.StartRecording();
+	captureVirtual.StartRecording();
+	Thread.Sleep(6000);
+	captureReal.StopRecording();
+	captureVirtual.StopRecording();
+	int start = 48000, length = Math.Min(a.Count, b.Count) - start - 14400;
+	List<(double R, int Lag)> matches = [];
+	for (int lag = 0; lag <= 14400; lag += 8)
+	{
+		double dot = 0, ea = 0, eb = 0;
+		for (int i = start; i < start + length; i += 2)
+		{
+			double x = a[i], y = b[i + lag];
+			dot += x * y;
+			ea += x * x;
+			eb += y * y;
+		}
+		matches.Add((dot / Math.Sqrt(ea * eb + 1e-18), lag));
+	}
+	Console.WriteLine($"real {a.Count / 48000.0:0.00} s, virtual {b.Count / 48000.0:0.00} s");
+	foreach ((double r, int lag) in matches.OrderByDescending(m => Math.Abs(m.R)).Where((m, i) => true).Take(40)
+		.Aggregate(new List<(double, int)>(), (kept, m) => { if (kept.All(k => Math.Abs(k.Item2 - m.Lag) > 480)) { kept.Add(m); } return kept; }).Take(4))
+	{
+		Console.WriteLine($"  match {r:0.00} with the virtual microphone {lag / 48.0:0.0} ms later");
+	}
 	return 0;
 }
 if (args.Length >= 1 && args[0] == "mic-gaps")

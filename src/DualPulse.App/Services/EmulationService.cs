@@ -772,6 +772,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		{
 			MicrophoneSettings wanted = settings.Current.EffectiveMicrophone;
 			processor.NoiseGate = wanted.NoiseGate;
+			processor.GateThresholdDb = wanted.GateThresholdDb;
 			processor.BoostDb = wanted.BoostDb;
 			processor.Process(stereo, Output);
 		}

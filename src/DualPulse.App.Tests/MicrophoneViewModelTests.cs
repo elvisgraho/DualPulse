@@ -188,10 +188,28 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		Assert.True(page.NoiseGate);
 		Assert.Equal(0, page.BoostDb);
 
+		Assert.Equal(-45, page.GateThresholdDb);
+
 		page.NoiseGate = false;
+		page.GateThresholdDb = -38;
 		page.BoostDb = 9;
 
-		Assert.Equal(new MicrophoneSettings(BoostDb: 9, NoiseGate: false), settings.Current.EffectiveMicrophone);
+		Assert.Equal(new MicrophoneSettings(BoostDb: 9, NoiseGate: false, GateThresholdDb: -38), settings.Current.EffectiveMicrophone);
+	}
+
+	[Fact]
+	public void GateLine_ShowsWhereTheGateOpens_InDualSenseModeWithTheGateOn()
+	{
+		page.Refresh();
+		Assert.Equal(0, page.GateLine);
+
+		settings.Update(s => s with { Emulation = PadKind.DualSense });
+		page.Refresh();
+		page.GateThresholdDb = -40;
+
+		Assert.Equal(0.01, page.GateLine, 4);
+		page.NoiseGate = false;
+		Assert.Equal(0, page.GateLine);
 	}
 
 	[Fact]

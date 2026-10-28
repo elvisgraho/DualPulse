@@ -115,6 +115,16 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		set => UpdateMicrophone(m => m with { NoiseGate = value });
 	}
 
+	// Where the gate opens, -70 to -20 dBFS.
+	public int GateThresholdDb
+	{
+		get => Microphone.GateThresholdDb;
+		set => UpdateMicrophone(m => m with { GateThresholdDb = Math.Clamp(value, -70, -20) });
+	}
+
+	// The gate's threshold on the top waveform (linear, 0-1); 0 when the gate doesn't apply.
+	public double GateLine => ShowVirtual && NoiseGate ? Math.Pow(10, GateThresholdDb / 20.0) : 0;
+
 	public int BoostDb
 	{
 		get => Microphone.BoostDb;
@@ -201,7 +211,12 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 			: "Working.";
 		(RealPeaks, RealProgress) = levels.Live();
 
-		ShowVirtual = settings.Current.Emulation == PadKind.DualSense;
+		bool showVirtual = settings.Current.Emulation == PadKind.DualSense;
+		if (showVirtual != ShowVirtual)
+		{
+			ShowVirtual = showVirtual;
+			OnPropertyChanged(nameof(GateLine));
+		}
 		bool recording = monitor?.InUse == true;
 		VirtualStatus = recording ? "A game or app is recording from it." : "Not in use.";
 		(VirtualPeaks, VirtualProgress) = monitor?.Levels.Live() ?? ([], 0);
@@ -257,6 +272,8 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		{
 			settings.Update(s => s with { Microphone = updated });
 			OnPropertyChanged(nameof(NoiseGate));
+			OnPropertyChanged(nameof(GateThresholdDb));
+			OnPropertyChanged(nameof(GateLine));
 			OnPropertyChanged(nameof(BoostDb));
 		}
 	}

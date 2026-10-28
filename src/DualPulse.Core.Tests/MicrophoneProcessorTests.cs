@@ -44,7 +44,7 @@ public sealed class MicrophoneProcessorTests
 
 	private static readonly Random Noise = new(3);
 
-	// Room noise (about -64 dBFS) or speech-like sound (about -24 dBFS), stereo.
+	// Noise of the given peak amplitude, stereo (20: about -69 dBFS; 3000: about -25 dBFS).
 	private static short[] Sound(int ms, int amplitude)
 	{
 		short[] stereo = new short[ms * Ms * 2];
@@ -61,14 +61,18 @@ public sealed class MicrophoneProcessorTests
 	private static short[] Between(short[] output, int startMs, int endMs) =>
 		[.. Enumerable.Range(startMs * Ms, (endMs - startMs) * Ms).Select(f => output[2 * f])];
 
-	private static MicrophoneProcessor Gate() => new() { NoiseGate = true };
+	private static MicrophoneProcessor Gate(int thresholdDb = -45) => new() { NoiseGate = true, GateThresholdDb = thresholdDb };
+
+	// Closed, the gate turns sound down 30 dB (to about 3%) instead of muting it.
+	private static void AssertTurnedDown(short[] output, int amplitude) =>
+		Assert.All(output, s => Assert.InRange(Math.Abs((int)s), 0, amplitude * 0.035 + 1));
 
 	[Fact]
-	public void Gate_QuietRoom_StaysSilent()
+	public void Gate_QuietRoom_StaysClosed()
 	{
 		short[] output = Run(Gate(), Sound(3000, 20));
 
-		Assert.All(Between(output, 2000, 2900), s => Assert.Equal(0, s));
+		AssertTurnedDown(Between(output, 100, 2900), 20);
 	}
 
 	[Fact]
@@ -80,7 +84,7 @@ public sealed class MicrophoneProcessorTests
 
 		// Output runs 30 ms behind; the word starts at 2000 ms and its first 10 ms come through already.
 		short[] start = Between(output, 2030, 2040);
-		Assert.True(start.Count(s => s != 0) > start.Length / 2);
+		Assert.True(start.Count(s => Math.Abs((int)s) > 200) > start.Length / 3);
 		// Fully open after that: the word passes as it was.
 		Assert.Equal(Between(input, 2020, 2270), Between(output, 2050, 2300));
 	}
@@ -88,22 +92,21 @@ public sealed class MicrophoneProcessorTests
 	[Fact]
 	public void Gate_MouthClick_DoesNotOpenIt()
 	{
-		short[] click = Sound(4, 12000);
+		short[] output = Run(Gate(), Concat(Sound(2000, 20), Sound(4, 12000), Sound(500, 20)));
 
-		short[] output = Run(Gate(), Concat(Sound(2000, 20), click, Sound(500, 20)));
-
-		Assert.All(Between(output, 1990, 2400), s => Assert.Equal(0, s));
+		AssertTurnedDown(Between(output, 1990, 2400), 12000);
+		AssertTurnedDown(Between(output, 2100, 2400), 20);
 	}
 
 	[Fact]
 	public void Gate_StaysOpenBetweenWords()
 	{
-		short[] input = Concat(Sound(2000, 20), Sound(300, 3000), Sound(120, 20), Sound(300, 3000), Sound(100, 20));
+		short[] input = Concat(Sound(2000, 20), Sound(300, 3000), Sound(200, 20), Sound(300, 3000), Sound(100, 20));
 
 		short[] output = Run(Gate(), input);
 
-		// The 120 ms pause (shifted 30 ms) passes as it was.
-		Assert.Equal(Between(input, 2310, 2410), Between(output, 2340, 2440));
+		// The 200 ms pause (shifted 30 ms) passes as it was.
+		Assert.Equal(Between(input, 2310, 2490), Between(output, 2340, 2520));
 	}
 
 	[Fact]
@@ -111,16 +114,17 @@ public sealed class MicrophoneProcessorTests
 	{
 		short[] output = Run(Gate(), Concat(Sound(2000, 20), Sound(300, 3000), Sound(1000, 20)));
 
-		Assert.All(Between(output, 2800, 3300), s => Assert.Equal(0, s));
+		AssertTurnedDown(Between(output, 2900, 3300), 20);
 	}
 
 	[Fact]
-	public void Gate_StartingWithDigitalSilence_StillLearnsTheRoom()
+	public void Gate_Threshold_DecidesWhatOpensIt()
 	{
-		// A microphone often starts with a moment of exact zeros; that isn't the room.
-		short[] output = Run(Gate(), Concat(new short[200 * Ms * 2], Sound(3000, 20)));
+		// Sound at about -45 dBFS: below a -40 dB threshold, above a -55 dB one.
+		short[] input = Concat(Sound(1000, 20), Sound(500, 300), Sound(100, 20));
 
-		Assert.All(Between(output, 2500, 3100), s => Assert.Equal(0, s));
+		AssertTurnedDown(Between(Run(Gate(-40), input), 1100, 1500), 300);
+		Assert.Equal(Between(input, 1100, 1400), Between(Run(Gate(-55), input), 1130, 1430));
 	}
 
 	[Fact]
