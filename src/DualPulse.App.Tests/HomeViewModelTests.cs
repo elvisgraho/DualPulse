@@ -109,6 +109,21 @@ public sealed class HomeViewModelTests : IDisposable
 	}
 
 	[Fact]
+	public void Home_ProfilePicker_FollowsAProfileChosenElsewhere()
+	{
+		// A controller shortcut (or the tray) changes the chosen profile; the picker on Home shows it.
+		GameProfile racing = new("Racing", GameProfile.NamedPrefix + "Racing");
+		settings.Update(s => s with { Profiles = [racing] });
+		List<string?> changed = [];
+		home.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+		settings.Update(s => s with { ChosenProfile = racing.Exe });
+
+		Assert.Contains(nameof(HomeViewModel.ChosenProfile), changed);
+		Assert.Equal("Racing", home.ChosenProfile?.Label);
+	}
+
+	[Fact]
 	public async Task Home_UsbSession_ShowsTheCable()
 	{
 		home.Refresh();

@@ -32,6 +32,20 @@ public sealed class ProfileSelectionTests : IDisposable
 	private GameProfile Saved => settings.Current.EffectiveProfiles.Single();
 
 	[Fact]
+	public void Selection_FollowsAProfileChosenElsewhere_AndBackToDefault()
+	{
+		// Chosen with a controller shortcut, on Home or in the tray: the Controller page edits what is active.
+		GameProfile racing = new("Racing", GameProfile.NamedPrefix + "Racing");
+		settings.Update(s => s with { Profiles = [Game, racing] });
+
+		settings.Update(s => s with { ChosenProfile = racing.Exe });
+		Assert.Equal(racing.Exe, selection.Selected?.Exe);
+
+		settings.Update(s => s with { ChosenProfile = null });
+		Assert.Null(selection.Selected);
+	}
+
+	[Fact]
 	public void Selection_StartsOnDefault_AndFollowsTheActiveGame()
 	{
 		Assert.Null(selection.Selected);

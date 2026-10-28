@@ -12,7 +12,9 @@ public enum ProfilePart
 }
 
 // Which profile the Controller page is editing (null = Default). It jumps to a game's profile when that game becomes
-// active, so alt-tabbing to DualPulse mid-game lands on the right profile. Changed can be raised off the UI thread.
+// active, so alt-tabbing to DualPulse mid-game lands on the right profile; it stays there when the game loses focus.
+// A profile chosen by hand (controller shortcut, Home, tray), Default too, is followed while no game is in front.
+// Changed can be raised off the UI thread.
 public sealed class ProfileSelection
 {
 	private readonly ISettingsService settings;
@@ -25,11 +27,32 @@ public sealed class ProfileSelection
 
 	private string? lastActiveExe;
 
+	private string? lastChosen;
+
+	private void OnSettingsChanged(AppSettings current)
+	{
+		lock (gate)
+		{
+			string? chosen = current.ChosenProfile;
+			if (!string.Equals(chosen, lastChosen, StringComparison.OrdinalIgnoreCase))
+			{
+				lastChosen = chosen;
+				// A game in front keeps its own profile; the choice applies (and shows) once it isn't.
+				if (profiles?.Active is not { IsNamed: false })
+				{
+					selectedExe = chosen;
+				}
+			}
+		}
+		Changed?.Invoke();
+	}
+
 	public ProfileSelection(ISettingsService settings, IProfileService? profiles = null)
 	{
 		this.settings = settings;
 		this.profiles = profiles;
-		settings.Changed += _ => Changed?.Invoke();
+		lastChosen = settings.Current.ChosenProfile;
+		settings.Changed += OnSettingsChanged;
 		if (profiles != null)
 		{
 			profiles.Changed += OnProfilesChanged;
