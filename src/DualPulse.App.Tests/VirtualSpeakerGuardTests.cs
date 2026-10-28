@@ -1,4 +1,7 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using DualPulse.App.Services;
+using DualPulse.Core.Devices;
 using DualPulse.Core.Audio;
 using DualPulse.Core.Tests;
 using DualPulse.Emulation;
@@ -24,9 +27,100 @@ public sealed class VirtualSpeakerGuardTests : IDisposable
 
 	private VirtualSpeakerGuard? guard;
 
-	public void Dispose() => guard?.Dispose();
+	private readonly FakeHidTransport transport = new();
 
-	private VirtualSpeakerGuard Start() => guard = new VirtualSpeakerGuard(output, settings, emulation, logger);
+	private readonly FakeTimeProvider time = new(new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero));
+
+	private ControllerService? controller;
+
+	public void Dispose()
+	{
+		guard?.Dispose();
+		controller?.Dispose();
+	}
+
+	private VirtualSpeakerGuard Start()
+	{
+		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
+		return guard = new VirtualSpeakerGuard(output, settings, emulation, logger, controller, time);
+	}
+
+	// Native mode, the PC's speakers as the output: the plain case of plugging the controller in.
+	private VirtualSpeakerGuard StartNative()
+	{
+		settings.Update(s => s with { Emulation = null });
+		emulation.Status = EmulationStatus.Off;
+		return Start();
+	}
+
+	private async Task PlugInAsync(string path)
+	{
+		transport.Add(path);
+		await controller!.StartAsync(TestContext.Current.CancellationToken);
+		TestReports.WaitUntil(() => controller.Session != null);
+	}
+
+	[Fact]
+	public async Task PluggingInByCable_WindowsMovingTheSoundToTheController_IsUndone()
+	{
+		StartNative();
+
+		await PlugInAsync(FakeHidTransport.UsbPath);
+		time.Advance(TimeSpan.FromSeconds(2));
+		output.ChangeTo(VirtualPad);
+
+		Assert.Equal(["speakers"], output.SetCalls);
+	}
+
+	[Fact]
+	public async Task SoundMovedJustBeforeTheControllerConnects_IsUndoneWhenItConnects()
+	{
+		// The sound device can show up before the controller itself does.
+		StartNative();
+		output.ChangeTo(VirtualPad);
+		time.Advance(TimeSpan.FromSeconds(2));
+
+		await PlugInAsync(FakeHidTransport.UsbPath);
+
+		TestReports.WaitUntil(() => output.SetCalls.Count == 1);
+		Assert.Equal("speakers", output.SetCalls[0]);
+	}
+
+	[Fact]
+	public async Task ChoosingTheControllerLater_IsLeftAlone()
+	{
+		StartNative();
+		await PlugInAsync(FakeHidTransport.UsbPath);
+		time.Advance(TimeSpan.FromSeconds(30));
+
+		output.ChangeTo(VirtualPad);
+
+		Assert.Empty(output.SetCalls);
+	}
+
+	[Fact]
+	public async Task ChoosingTheControllerRightAfterBeingSwitchedBack_IsLeftAlone()
+	{
+		StartNative();
+		await PlugInAsync(FakeHidTransport.UsbPath);
+		output.ChangeTo(VirtualPad);
+
+		time.Advance(TimeSpan.FromSeconds(1));
+		output.ChangeTo(VirtualPad);
+
+		Assert.Equal(["speakers"], output.SetCalls);
+	}
+
+	[Fact]
+	public async Task ConnectingOverBluetooth_IsLeftAlone()
+	{
+		StartNative();
+		await PlugInAsync(FakeHidTransport.BluetoothPath);
+
+		output.ChangeTo(VirtualPad);
+
+		Assert.Empty(output.SetCalls);
+	}
 
 	[Fact]
 	public void WindowsMakingTheVirtualDualSenseTheOutput_IsUndone_WhileGameSoundStaysOnThePc()
