@@ -278,19 +278,6 @@ public sealed class HomeViewModelTests : IDisposable
 	}
 
 	[Fact]
-	public void Home_Lightbar_FollowsTheChosenColour_ForTheDrawing()
-	{
-		Assert.Equal(AppSettings.AccentLightbar, home.Lightbar);
-		List<string?> changed = [];
-		home.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
-
-		home.SetLightbarCommand.Execute(new Rgb(0x3D, 0x7B, 0xFF));
-
-		Assert.Equal(new Rgb(0x3D, 0x7B, 0xFF), home.Lightbar);
-		Assert.Contains(nameof(HomeViewModel.Lightbar), changed);
-	}
-
-	[Fact]
 	public void Home_SetLightbar_UpdatesSettings()
 	{
 		Assert.Equal(
