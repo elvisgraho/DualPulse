@@ -25,8 +25,19 @@ public sealed partial class HomeViewModel : ObservableObject
 
 	private readonly Func<DeviceInfoViewModel>? deviceInfo;
 
-	// The device info window's view model (null when the app has none to offer, e.g. in tests).
-	public DeviceInfoViewModel? CreateDeviceInfo() => deviceInfo?.Invoke();
+	// The controller details shown over Home while open (refreshed with the status values).
+	[ObservableProperty]
+	public partial DeviceInfoViewModel? DeviceInfo { get; private set; }
+
+	[RelayCommand]
+	private void ShowDeviceInfo()
+	{
+		DeviceInfo = deviceInfo?.Invoke();
+		_ = DeviceInfo?.LoadAsync();
+	}
+
+	[RelayCommand]
+	private void CloseDeviceInfo() => DeviceInfo = null;
 
 	private readonly IPcControlService? pcControl;
 
@@ -177,6 +188,7 @@ public sealed partial class HomeViewModel : ObservableObject
 		ControllerSession? session = controller.Session;
 		IsConnected = session != null;
 		IsCabled = session?.Transport == Transport.Usb;
+		_ = DeviceInfo?.LoadAsync();
 		EmulationText = emulation.Status == EmulationStatus.DriverMissing ? "Driver missing" : settings.Current.Emulation switch
 		{
 			PadKind.Xbox360 => "Xbox 360",

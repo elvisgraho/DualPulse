@@ -23,12 +23,9 @@ public partial class HomeView : UserControl
 		statusTimer.Start();
 	}
 
-	private void OnDetails(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	private void OnBackdropPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
 	{
-		if ((DataContext as HomeViewModel)?.CreateDeviceInfo() is { } info && TopLevel.GetTopLevel(this) is Window owner)
-		{
-			_ = new DeviceInfoWindow(info).ShowDialog(owner);
-		}
+		(DataContext as HomeViewModel)?.CloseDeviceInfoCommand.Execute(null);
 	}
 
 	protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

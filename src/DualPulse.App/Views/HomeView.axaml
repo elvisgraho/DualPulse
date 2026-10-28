@@ -6,6 +6,7 @@
              xmlns:core="using:DualPulse.Core.Protocol"
              x:Class="DualPulse.App.Views.HomeView"
              x:DataType="vm:HomeViewModel">
+  <Panel>
   <Grid ColumnDefinitions="3*,24,2*">
     <!-- Live controller -->
     <Border Grid.Column="0" Classes="card">
@@ -21,7 +22,7 @@
         </controls:ControllerView>
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0" IsVisible="{Binding IsConnected}">
           <TextBlock Classes="secondary" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding DeviceSummary}" />
-          <Button Grid.Column="1" Content="Details" Click="OnDetails" />
+          <Button Grid.Column="1" Content="Details" Command="{Binding ShowDeviceInfoCommand}" />
         </Grid>
       </Grid>
     </Border>
@@ -101,4 +102,34 @@
       </StackPanel>
     </ScrollViewer>
   </Grid>
+
+  <!-- Controller details over Home; closes with Close or a click beside the card. -->
+  <Panel IsVisible="{Binding DeviceInfo, Converter={x:Static ObjectConverters.IsNotNull}}">
+    <Border Background="#99000000" PointerPressed="OnBackdropPressed" />
+    <Border Classes="card" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center"
+            DataContext="{Binding DeviceInfo}" x:DataType="vm:DeviceInfoViewModel">
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Classes="caption" VerticalAlignment="Center" Text="CONTROLLER DETAILS" />
+          <Button Grid.Column="1" Content="Close" Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).CloseDeviceInfoCommand}" />
+        </Grid>
+        <TextBlock Classes="secondary" Text="Connect your controller." IsVisible="{Binding !IsConnected}" />
+        <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding IsConnected}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:DeviceInfoRow">
+              <Grid ColumnDefinitions="140,*" Margin="0,0,0,8">
+                <TextBlock Classes="secondary" Text="{Binding Label}" />
+                <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Content="Copy" Command="{Binding CopyCommand}" />
+          <TextBlock Classes="caption" VerticalAlignment="Center" Text="{Binding CopyStatus}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Panel>
+  </Panel>
 </UserControl>

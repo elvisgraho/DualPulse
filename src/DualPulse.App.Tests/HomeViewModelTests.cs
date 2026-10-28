@@ -29,7 +29,7 @@ public sealed class HomeViewModelTests : IDisposable
 	public HomeViewModelTests()
 	{
 		controller = new ControllerService(transport, time, settings, NullLogger<ControllerManager>.Instance);
-		home = new HomeViewModel(controller, emulation, settings, power, time: time);
+		home = new HomeViewModel(controller, emulation, settings, power, time: time, deviceInfo: () => new DeviceInfoViewModel(controller, time));
 	}
 
 	public void Dispose()
@@ -93,6 +93,19 @@ public sealed class HomeViewModelTests : IDisposable
 		home.Refresh();
 
 		Assert.Equal("Firmware 06.30 · Connected for 1 h 12 min", home.DeviceSummary);
+	}
+
+	[Fact]
+	public async Task Home_Details_OpensAndClosesInPlace()
+	{
+		await ConnectAsync(FakeHidTransport.UsbPath);
+		Assert.Null(home.DeviceInfo);
+
+		home.ShowDeviceInfoCommand.Execute(null);
+		TestReports.WaitUntil(() => home.DeviceInfo?.IsConnected == true);
+
+		home.CloseDeviceInfoCommand.Execute(null);
+		Assert.Null(home.DeviceInfo);
 	}
 
 	[Fact]
