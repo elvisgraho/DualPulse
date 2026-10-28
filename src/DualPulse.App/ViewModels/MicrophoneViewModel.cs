@@ -65,8 +65,15 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 	[ObservableProperty]
 	public partial string? RealName { get; private set; }
 
+	// The waveforms: peaks with the bar still filling last, and how full it is (see Waveform).
 	[ObservableProperty]
 	public partial float[] RealPeaks { get; private set; } = [];
+
+	[ObservableProperty]
+	public partial double RealProgress { get; private set; }
+
+	[ObservableProperty]
+	public partial double VirtualProgress { get; private set; }
 
 	[ObservableProperty]
 	public partial bool HasVolume { get; private set; }
@@ -177,12 +184,12 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 			: capture == null ? "Windows hasn't found the controller's microphone yet."
 			: time.GetElapsedTime(lastSoundAt) >= SilentFor ? "No sound from the controller. Turn it off and on again while it's plugged in."
 			: "Working.";
-		RealPeaks = levels.Snapshot();
+		(RealPeaks, RealProgress) = levels.Live();
 
 		ShowVirtual = settings.Current.Emulation == PadKind.DualSense;
 		bool recording = monitor?.InUse == true;
 		VirtualStatus = recording ? "A game or app is recording from it." : "Not in use.";
-		VirtualPeaks = monitor?.Levels.Snapshot() ?? [];
+		(VirtualPeaks, VirtualProgress) = monitor?.Levels.Live() ?? ([], 0);
 	}
 
 	private sealed record DeviceInfo(string? RealName, string? VirtualName, int? Volume);

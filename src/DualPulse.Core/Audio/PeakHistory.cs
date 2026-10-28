@@ -67,6 +67,15 @@ public sealed class PeakHistory
 		}
 	}
 
+	// For smooth scrolling: the finished bins plus the one still filling (last), and how full that one is (0-1).
+	public (float[] Peaks, double Progress) Live()
+	{
+		lock (gate)
+		{
+			return ([.. bins[next..], .. bins[..next], binPeak], framesInBin / (double)framesPerBin);
+		}
+	}
+
 	public void Clear()
 	{
 		lock (gate)

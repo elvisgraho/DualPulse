@@ -10,7 +10,7 @@ namespace DualPulse.Emulation;
 // audio interface does not belong to DualPulse's virtual pad (the parent USB device's instance id carries the virtual
 // serial). Played through shared-mode WASAPI with little latency; samples arriving faster than the device plays are
 // dropped beyond a short buffer, so haptics never lag behind the game. Its microphone is the capture endpoint found
-// the same way, recorded through shared-mode WASAPI with a 20 ms buffer.
+// the same way, recorded through shared-mode WASAPI, event-driven with a 10 ms buffer (even blocks for the waveform).
 [SupportedOSPlatform("windows")]
 public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 {
@@ -183,7 +183,7 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 		{
 			this.device = device;
 			this.blocks = blocks;
-			capture = new WasapiCapture(device, false, 20);
+			capture = new WasapiCapture(device, true, 10);
 			converter = new MicrophoneConverter(capture.WaveFormat.SampleRate, capture.WaveFormat.Channels);
 			capture.DataAvailable += OnData;
 			capture.StartRecording();

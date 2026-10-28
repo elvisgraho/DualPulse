@@ -56,4 +56,20 @@ public sealed class PeakHistoryTests
 
 		Assert.Equal(0.5f, history.Snapshot()[^1], 3);
 	}
+
+	[Fact]
+	public void Live_IncludesTheStepStillFilling_AndHowFarItIs()
+	{
+		PeakHistory history = new(binsPerSecond: 40, seconds: 5);
+		history.Push(Stereo(1200, 3277));
+
+		// A quarter of the next 25 ms step.
+		history.Push(Stereo(300, short.MaxValue));
+
+		(float[] peaks, double progress) = history.Live();
+		Assert.Equal(201, peaks.Length);
+		Assert.Equal(0.1f, peaks[^2], 3);
+		Assert.Equal(1f, peaks[^1], 3);
+		Assert.Equal(0.25, progress, 3);
+	}
 }

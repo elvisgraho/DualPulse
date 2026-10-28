@@ -17,7 +17,7 @@
           <TextBlock Classes="caption" Text="YOUR CONTROLLER'S MICROPHONE" />
           <TextBlock Classes="secondary" TextWrapping="Wrap" Text="{Binding RealName, StringFormat='In Windows: {0}'}"
                      IsVisible="{Binding RealName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <controls:Waveform Height="64" Peaks="{Binding RealPeaks}" />
+          <controls:Waveform Height="64" Peaks="{Binding RealPeaks}" Progress="{Binding RealProgress}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding Status}" />
           <Grid ColumnDefinitions="Auto,16,*,16,48" IsVisible="{Binding HasVolume}">
             <TextBlock VerticalAlignment="Center" Text="Volume" />
@@ -33,7 +33,7 @@
           <TextBlock Classes="caption" Text="IN GAMES" />
           <TextBlock TextWrapping="Wrap" Text="{Binding VirtualName, StringFormat='Pick {0} in games and voice chat.'}"
                      IsVisible="{Binding VirtualName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <controls:Waveform Height="64" Peaks="{Binding VirtualPeaks}" />
+          <controls:Waveform Height="64" Peaks="{Binding VirtualPeaks}" Progress="{Binding VirtualProgress}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding VirtualStatus}" />
         </StackPanel>
       </Border>

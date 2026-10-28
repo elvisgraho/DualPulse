@@ -87,7 +87,7 @@ public sealed class MicrophoneViewModelTests : IDisposable
 
 		Assert.Equal("Headset Microphone (8- DualSense Wireless Controller)", page.RealName);
 		Assert.Equal("Working.", page.Status);
-		Assert.Equal(0.5f, page.RealPeaks[^1], 3);
+		Assert.Equal(0.5f, page.RealPeaks[^2], 3);
 	}
 
 	[Fact]
@@ -167,7 +167,7 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		page.Refresh();
 
 		Assert.Equal("A game or app is recording from it.", page.VirtualStatus);
-		Assert.Equal(0.5f, page.VirtualPeaks[^1], 3);
+		Assert.Equal(0.5f, page.VirtualPeaks[^2], 3);
 	}
 
 	[Fact]
