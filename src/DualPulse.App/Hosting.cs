@@ -128,7 +128,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<MappingViewModel>();
 		builder.Services.AddSingleton(s => new EmulationViewModel(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IEmulationService>(),
 			s.GetRequiredService<IVirtualPadBackend>(), s.GetRequiredService<IHidHideService>(), PlatformServices.ViGEmBusVersion,
-			steamRunning: PlatformServices.SteamRunning));
+			steamRunning: PlatformServices.SteamRunning, controller: s.GetRequiredService<IControllerService>(), power: s.GetRequiredService<IPowerService>()));
 		builder.Services.AddSingleton(s => new Diagnostics(s.GetRequiredService<ISettingsService>(), s.GetRequiredService<IControllerService>(),
 			s.GetRequiredService<IEmulationService>(), s.GetRequiredService<IVirtualPadBackend>(), s.GetRequiredService<IHidHideService>(),
 			PlatformServices.ViGEmBusVersion, LogsFolder, CurrentVersion.ToString(3), System.Runtime.InteropServices.RuntimeInformation.OSDescription));

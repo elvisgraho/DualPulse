@@ -130,6 +130,14 @@
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="{Binding HideStatusText}" />
             <Button Grid.Column="2" Content="Get HidHide" Command="{Binding GetHidHideCommand}" IsVisible="{Binding HidHideMissing}" />
           </Grid>
+          <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowReconnect}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="A game sees two controllers?" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding ReconnectStatus}"
+                         IsVisible="{Binding ReconnectStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+            <Button Grid.Column="2" VerticalAlignment="Center" Content="Reconnect controller" Command="{Binding ReconnectCommand}" />
+          </Grid>
         </StackPanel>
       </Border>
     </StackPanel>

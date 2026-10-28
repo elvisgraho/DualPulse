@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DualPulse.App.Services;
+using DualPulse.Core.Devices;
 using DualPulse.Core.Protocol;
 using DualPulse.Emulation;
 
@@ -31,8 +32,11 @@ public sealed partial class EmulationViewModel : ObservableObject
 	private readonly UiContext ui = new();
 
 	public EmulationViewModel(ISettingsService settings, IEmulationService emulation, IVirtualPadBackend backend, IHidHideService hidHide,
-		Func<string?> driverVersion, Action<string>? open = null, Func<bool>? steamRunning = null)
+		Func<string?> driverVersion, Action<string>? open = null, Func<bool>? steamRunning = null, IControllerService? controller = null,
+		IPowerService? power = null)
 	{
+		this.controller = controller;
+		this.power = power;
 		this.steamRunning = steamRunning ?? (() => false);
 		this.settings = settings;
 		this.emulation = emulation;
@@ -49,6 +53,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 			OnPropertyChanged(nameof(ShowUsbIp));
 			OnPropertyChanged(nameof(ShowRemaps));
 			OnPropertyChanged(nameof(HideController));
+			OnPropertyChanged(nameof(ShowReconnect));
 			OnPropertyChanged(nameof(GameSoundOnController));
 			OnPropertyChanged(nameof(GameLights));
 			OnPropertyChanged(nameof(GameTriggers));
@@ -99,6 +104,36 @@ public sealed partial class EmulationViewModel : ObservableObject
 	// The switch stays usable unless HidHide is absent, so hiding can always be turned off.
 	[ObservableProperty]
 	public partial bool CanToggleHide { get; private set; }
+
+	private readonly IControllerService? controller;
+
+	private readonly IPowerService? power;
+
+	// "Fix double input": a game that opened the controller before it was hidden still sees it until it reconnects.
+	public bool ShowReconnect => settings.Current.HideController;
+
+	[ObservableProperty]
+	public partial string ReconnectStatus { get; private set; } = "";
+
+	// Over Bluetooth DualPulse turns the controller off (PS turns it back on); on the cable it has to be replugged.
+	[RelayCommand]
+	private async Task Reconnect()
+	{
+		ControllerSession? session = controller?.Session;
+		if (session == null)
+		{
+			ReconnectStatus = "Connect your controller first.";
+			return;
+		}
+		if (session.Transport != Transport.Bluetooth)
+		{
+			ReconnectStatus = "Unplug the cable and plug it back in.";
+			return;
+		}
+		IPowerService? off = power;
+		bool done = off != null && await Task.Run(() => off.PowerOffNow("reconnect to fix double input"));
+		ReconnectStatus = done ? "Turned off. Press PS to turn it back on." : "Couldn't turn it off. Hold PS for 10 seconds, then press it again.";
+	}
 
 	// What the chosen mode gives, in a few short points under the choice.
 	public IReadOnlyList<string> ModePoints => settings.Current.Emulation switch
