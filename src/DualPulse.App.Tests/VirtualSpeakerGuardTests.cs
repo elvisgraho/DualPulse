@@ -53,11 +53,20 @@ public sealed class VirtualSpeakerGuardTests : IDisposable
 		return Start();
 	}
 
-	private async Task PlugInAsync(string path)
+	private async Task<FakeDevice> PlugInAsync(string path)
 	{
-		transport.Add(path);
+		FakeDevice device = transport.Add(path);
 		await controller!.StartAsync(TestContext.Current.CancellationToken);
 		TestReports.WaitUntil(() => controller.Session != null);
+		return device;
+	}
+
+	private void Unplug(FakeDevice device)
+	{
+		// Windows moves the sound off the vanished controller as it goes.
+		output.ChangeTo(Speakers);
+		transport.Remove(device);
+		TestReports.WaitUntil(() => controller!.Session == null);
 	}
 
 	[Fact]
@@ -106,6 +115,43 @@ public sealed class VirtualSpeakerGuardTests : IDisposable
 		output.ChangeTo(VirtualPad);
 
 		time.Advance(TimeSpan.FromSeconds(1));
+		output.ChangeTo(VirtualPad);
+
+		Assert.Equal(["speakers"], output.SetCalls);
+	}
+
+	[Fact]
+	public async Task ControllerChosenAsTheOutput_StaysChosenAfterAReplug()
+	{
+		// You picked the controller (earbuds in its jack); Windows brings it back when you plug in again.
+		StartNative();
+		FakeDevice device = await PlugInAsync(FakeHidTransport.UsbPath);
+		time.Advance(TimeSpan.FromSeconds(30));
+		output.ChangeTo(VirtualPad);
+		Unplug(device);
+		time.Advance(TimeSpan.FromSeconds(10));
+
+		await PlugInAsync(FakeHidTransport.UsbPath);
+		output.ChangeTo(VirtualPad);
+
+		Assert.Empty(output.SetCalls);
+	}
+
+	[Fact]
+	public async Task SwitchingAwayFromTheControllerWhilePluggedIn_CountsAsYourChoice()
+	{
+		StartNative();
+		FakeDevice device = await PlugInAsync(FakeHidTransport.UsbPath);
+		time.Advance(TimeSpan.FromSeconds(30));
+		output.ChangeTo(VirtualPad);
+		time.Advance(TimeSpan.FromSeconds(30));
+		output.ChangeTo(Speakers);
+		time.Advance(TimeSpan.FromSeconds(30));
+		transport.Remove(device);
+		TestReports.WaitUntil(() => controller!.Session == null);
+		time.Advance(TimeSpan.FromSeconds(10));
+
+		await PlugInAsync(FakeHidTransport.UsbPath);
 		output.ChangeTo(VirtualPad);
 
 		Assert.Equal(["speakers"], output.SetCalls);

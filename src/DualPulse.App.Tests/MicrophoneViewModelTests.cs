@@ -140,7 +140,30 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		Assert.Equal(65, page.Volume);
 		page.Volume = 80;
 
-		Assert.Equal(80, microphones.VolumeValue);
+		// Written in the background, off the UI thread.
+		TestReports.WaitUntil(() => microphones.VolumeValue == 80);
+	}
+
+	[Fact]
+	public async Task Volume_ACheckStartedBeforeMovingTheSlider_DoesntSnapItBack()
+	{
+		await ConnectAsync(FakeHidTransport.UsbPath);
+		page.Start();
+		RefreshUntil(() => page.HasVolume);
+		microphones.HoldVolumeRead = new ManualResetEventSlim();
+		microphones.ReadStarted.Reset();
+		time.Advance(TimeSpan.FromSeconds(2));
+		page.Refresh();
+		Assert.True(microphones.ReadStarted.Wait(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
+
+		page.Volume = 80;
+		microphones.HoldVolumeRead.Set();
+		TestReports.WaitUntil(() => microphones.VolumeReads == 2 && microphones.VolumeValue == 80);
+		Thread.Sleep(50);
+		page.Refresh();
+
+		// The check that started at 65 finished after the slider moved; it must not put it back.
+		Assert.Equal(80, page.Volume);
 	}
 
 	[Fact]
@@ -209,7 +232,8 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		page.Refresh();
 		page.GateThresholdDb = -40;
 
-		Assert.Equal(0.01, page.GateLine, 4);
+		// Drawn where speech peaks sit, about 10 dB above the gate's average loudness.
+		Assert.Equal(0.0316, page.GateLine, 4);
 		page.NoiseGate = false;
 		Assert.Equal(0, page.GateLine);
 	}
@@ -243,7 +267,23 @@ public sealed class MicrophoneViewModelTests : IDisposable
 
 		public (string? Real, string? Virtual) MicrophoneNames() => Names;
 
-		public int? MicrophoneVolume() => Available ? VolumeValue : null;
+		// Holds a read back until released (a slow device check); the value is the one at the start of the read.
+		public ManualResetEventSlim? HoldVolumeRead { get; set; }
+
+		public int VolumeReads => Volatile.Read(ref volumeReads);
+
+		private int volumeReads;
+
+		public ManualResetEventSlim ReadStarted { get; } = new();
+
+		public int? MicrophoneVolume()
+		{
+			int value = VolumeValue;
+			ReadStarted.Set();
+			HoldVolumeRead?.Wait(TimeSpan.FromSeconds(5));
+			Interlocked.Increment(ref volumeReads);
+			return Available ? value : null;
+		}
 
 		public bool SetMicrophoneVolume(int percent)
 		{

@@ -77,7 +77,7 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 		{
 			return device == null ? null : (int)Math.Round(device.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
 		}
-		catch (COMException)
+		catch (Exception)
 		{
 			return null;
 		}
@@ -95,7 +95,7 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 			device.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(percent, 0, 100) / 100f;
 			return true;
 		}
-		catch (COMException)
+		catch (Exception)
 		{
 			return false;
 		}
@@ -124,7 +124,15 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 	public IDisposable? OpenMicrophone(MicrophoneBlock blocks)
 	{
 		MMDevice? device = RealMicrophone();
-		return device == null ? null : new Microphone(device, blocks);
+		try
+		{
+			return device == null ? null : new Microphone(device, blocks);
+		}
+		catch (Exception)
+		{
+			// The device is disposed already; recording just couldn't start.
+			return null;
+		}
 	}
 
 	// Public for the probe: whether this endpoint belongs to DualPulse's virtual DualSense.
@@ -167,35 +175,120 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 	[LibraryImport("cfgmgr32.dll", StringMarshalling = StringMarshalling.Utf16)]
 	private static partial int CM_Get_Device_IDW(uint node, [Out] char[] buffer, int length, uint flags);
 
+	// The controller's microphone, recorded until disposed. When Windows ends the recording by itself (the device was
+	// reset, its format changed, the audio service restarted), it finds the microphone again and carries on, trying
+	// once a second.
 	private sealed class Microphone : IDisposable
 	{
-		private readonly MMDevice device;
+		private static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(1);
 
-		private readonly WasapiCapture capture;
-
-		private readonly MicrophoneConverter converter;
+		private readonly object gate = new();
 
 		private readonly MicrophoneBlock blocks;
 
+		private readonly Timer restart;
+
+		private MMDevice? device;
+
+		private WasapiCapture? capture;
+
+		private MicrophoneConverter? converter;
+
 		private float[] converted = [];
 
+		private bool disposed;
+
+		// Windows ended the recording; the restart timer takes it from here.
+		private bool stopped;
+
+		// Throws (leaving nothing open) when recording can't start.
 		public Microphone(MMDevice device, MicrophoneBlock blocks)
 		{
-			this.device = device;
 			this.blocks = blocks;
-			capture = new WasapiCapture(device, true, 10);
-			converter = new MicrophoneConverter(capture.WaveFormat.SampleRate, capture.WaveFormat.Channels);
-			capture.DataAvailable += OnData;
-			capture.StartRecording();
+			restart = new Timer(_ => Restart());
+			lock (gate)
+			{
+				Start(device);
+			}
+		}
+
+		// Caller holds gate.
+		private void Start(MMDevice found)
+		{
+			WasapiCapture? started = null;
+			try
+			{
+				started = new WasapiCapture(found, true, 10);
+				converter = new MicrophoneConverter(started.WaveFormat.SampleRate, started.WaveFormat.Channels);
+				started.DataAvailable += OnData;
+				started.RecordingStopped += OnStopped;
+				started.StartRecording();
+			}
+			catch (Exception)
+			{
+				started?.Dispose();
+				found.Dispose();
+				throw;
+			}
+			device = found;
+			capture = started;
+		}
+
+		// May run on the capture thread itself, which closing waits for: only schedule the restart here.
+		private void OnStopped(object? sender, StoppedEventArgs e)
+		{
+			lock (gate)
+			{
+				if (!disposed && sender == capture)
+				{
+					stopped = true;
+					restart.Change(RetryAfter, Timeout.InfiniteTimeSpan);
+				}
+			}
+		}
+
+		// Timer thread: closes the ended recording and starts a new one.
+		private void Restart()
+		{
+			lock (gate)
+			{
+				if (disposed || !stopped)
+				{
+					return;
+				}
+				if (capture != null)
+				{
+					Close();
+				}
+				try
+				{
+					if (RealMicrophone() is { } found)
+					{
+						Start(found);
+						stopped = false;
+						return;
+					}
+				}
+				catch (Exception)
+				{
+				}
+				restart.Change(RetryAfter, Timeout.InfiniteTimeSpan);
+			}
 		}
 
 		private void OnData(object? sender, WaveInEventArgs e)
 		{
-			WaveFormat format = capture.WaveFormat;
+			WasapiCapture? source = sender as WasapiCapture;
+			MicrophoneConverter? current = converter;
+			if (source == null || current == null)
+			{
+				return;
+			}
+			WaveFormat format = source.WaveFormat;
 			ReadOnlySpan<byte> bytes = e.Buffer.AsSpan(0, e.BytesRecorded);
 			if (format.Encoding == WaveFormatEncoding.IeeeFloat || (format.Encoding == WaveFormatEncoding.Extensible && format.BitsPerSample == 32))
 			{
-				converter.Process(MemoryMarshal.Cast<byte, float>(bytes), blocks);
+				current.Process(MemoryMarshal.Cast<byte, float>(bytes), blocks);
 			}
 			else if (format.BitsPerSample == 16)
 			{
@@ -208,22 +301,45 @@ public sealed partial class WindowsControllerUsbAudio : IControllerUsbAudio
 				{
 					converted[i] = samples[i] / 32768f;
 				}
-				converter.Process(converted.AsSpan(0, samples.Length), blocks);
+				current.Process(converted.AsSpan(0, samples.Length), blocks);
 			}
+		}
+
+		// Caller holds gate.
+		private void Close()
+		{
+			if (capture != null)
+			{
+				capture.DataAvailable -= OnData;
+				capture.RecordingStopped -= OnStopped;
+				try
+				{
+					capture.StopRecording();
+				}
+				catch (Exception)
+				{
+				}
+				try
+				{
+					capture.Dispose();
+				}
+				catch (Exception)
+				{
+				}
+			}
+			device?.Dispose();
+			capture = null;
+			device = null;
 		}
 
 		public void Dispose()
 		{
-			capture.DataAvailable -= OnData;
-			try
+			lock (gate)
 			{
-				capture.StopRecording();
+				disposed = true;
+				restart.Dispose();
+				Close();
 			}
-			catch (Exception)
-			{
-			}
-			capture.Dispose();
-			device.Dispose();
 		}
 	}
 

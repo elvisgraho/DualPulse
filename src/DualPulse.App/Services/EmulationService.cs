@@ -720,7 +720,6 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			if (microphone != null)
 			{
 				pad.MicrophoneOpened -= microphone.Set;
-				microphone.Close();
 			}
 			leased.Forward = null;
 			settings.Changed -= reapply;
@@ -729,6 +728,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 			bound.Apply(current => current with { GameBlock = null });
 			rumble.SetGameRumble(0, 0);
 			usbRoute?.Close();
+			microphone?.Close();
 		};
 	}
 
@@ -826,7 +826,15 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 				{
 					if (capture != null)
 					{
-						capture.Dispose();
+						try
+						{
+							capture.Dispose();
+						}
+						catch (Exception error)
+						{
+							// The device was removed or Windows' audio restarted: it is gone either way.
+							logger.LogDebug(error, "Closing the controller's microphone failed");
+						}
 						capture = null;
 						logger.LogInformation("Recording from the virtual DualSense stopped: the controller's microphone is closed");
 					}

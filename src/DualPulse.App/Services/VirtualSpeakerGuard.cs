@@ -12,7 +12,9 @@ namespace DualPulse.App.Services;
 //   through it), but game sound played there is dropped.
 // - Right after the controller is plugged in by cable: Windows may make its sound device the default. Switched back
 //   when the move happens within PlugInWindow of the cable connection (either may come first), once per plug-in.
-// Otherwise choosing a DualSense as the output is the user's business.
+// Otherwise choosing a DualSense as the output is the user's business: picked while it's plugged in, it is left alone
+// on later plug-ins too, until the user picks another output while it stays plugged in (Windows moving the sound off
+// a controller being unplugged doesn't count).
 public sealed class VirtualSpeakerGuard : IHostedService, IDisposable
 {
 	private readonly IDefaultAudioOutput output;
@@ -45,14 +47,15 @@ public sealed class VirtualSpeakerGuard : IHostedService, IDisposable
 	{
 		this.controller = controller;
 		this.time = time ?? TimeProvider.System;
-		if (controller != null)
-		{
-			controller.SessionStarted += OnSessionStarted;
-		}
 		this.output = output;
 		this.settings = settings;
 		this.emulation = emulation;
 		this.logger = logger;
+		if (controller != null)
+		{
+			controller.SessionStarted += OnSessionStarted;
+			controller.SessionEnded += OnSessionEnded;
+		}
 		output.Changed += Check;
 		settings.Changed += OnSettingsChanged;
 		// Raised under the emulation service's lock: check elsewhere (switching the output takes a moment).
@@ -76,6 +79,32 @@ public sealed class VirtualSpeakerGuard : IHostedService, IDisposable
 		if (controller != null)
 		{
 			controller.SessionStarted -= OnSessionStarted;
+			controller.SessionEnded -= OnSessionEnded;
+		}
+	}
+
+	// The user picked a DualSense output themselves; and when the output last moved off a DualSense while one was
+	// plugged in (turned into the user's choice once the controller has stayed plugged in a while).
+	private bool userChoseDualSense;
+
+	private DateTimeOffset? movedOffAt;
+
+	private static readonly TimeSpan UnplugGrace = TimeSpan.FromSeconds(3);
+
+	private void OnSessionEnded(ControllerSession session)
+	{
+		if (session.Transport != Transport.Usb)
+		{
+			return;
+		}
+		lock (gate)
+		{
+			// Moved off long before the unplug: the user's choice. Moments before it: Windows reacting to the unplug.
+			if (movedOffAt is { } at && time.GetUtcNow() - at > UnplugGrace)
+			{
+				userChoseDualSense = false;
+			}
+			movedOffAt = null;
 		}
 	}
 
@@ -106,8 +135,13 @@ public sealed class VirtualSpeakerGuard : IHostedService, IDisposable
 			{
 				return;
 			}
+			bool onCable = controller?.Session?.Transport == Transport.Usb;
 			if (!IsDualSense(current))
 			{
+				if (dualSenseSince != null && onCable)
+				{
+					movedOffAt = time.GetUtcNow();
+				}
 				lastOwn = current;
 				dualSenseSince = null;
 				return;
@@ -116,9 +150,16 @@ public sealed class VirtualSpeakerGuard : IHostedService, IDisposable
 			dualSenseSince ??= now;
 			bool virtualPadTookIt = VirtualDualSenseActive.In(settings, emulation) && !settings.Current.GameSoundOnController;
 			bool pluggedIn = cableArrivedAt is { } arrived && now - arrived <= PlugInWindow
-				&& (dualSenseSince.Value - arrived).Duration() <= PlugInWindow;
+				&& (dualSenseSince.Value - arrived).Duration() <= PlugInWindow && !userChoseDualSense;
 			if (lastOwn == null || !(virtualPadTookIt || pluggedIn))
 			{
+				// A DualSense picked while one is plugged in, outside a plug-in: the user's choice.
+				bool plugInGoingOn = cableArrivedAt is { } plugged && now - plugged <= PlugInWindow;
+				if (onCable && !virtualPadTookIt && !plugInGoingOn)
+				{
+					userChoseDualSense = true;
+					movedOffAt = null;
+				}
 				return;
 			}
 			if (pluggedIn)

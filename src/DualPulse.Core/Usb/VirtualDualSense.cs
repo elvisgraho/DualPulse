@@ -31,8 +31,9 @@ public interface IUsbIpDevice
 // - Interrupt OUT 0x03: the game's output report; its 47-byte block is raised as OutputBlock.
 // - Isochronous OUT 0x01: 4-channel game audio, raised as Speaker (all four) and Haptics (channels 3-4).
 // - Isochronous IN 0x82: microphone, 48 kHz stereo; each 1 ms packet carries 48 frames of what WriteMicrophone was
-//   given, taken when the transfer completes (the host queues transfers ahead). After running dry it waits for 10 ms
-//   of sound before playing again, so small timing differences don't crackle. MicrophoneOpened tells when the host starts and stops recording
+//   given, taken when the transfer completes (the host queues transfers ahead). After running dry it waits until the
+//   transfer plus 10 ms of sound is there, so a 10 ms cushion stays and a capture block arriving a little late
+//   doesn't leave a gap. MicrophoneOpened tells when the host starts and stops recording
 //   (its interface choice), so the real microphone is only used while something records.
 // Isochronous transfers run on a 1 ms frame clock, like a real bus: each starts where the endpoint's previous one ended
 // (or at the current frame after a gap) and completes once its packets' frames have passed, so the host streams at the
@@ -99,7 +100,7 @@ public sealed class VirtualDualSense : IUsbIpDevice
 
 	private int microphoneCount;
 
-	// False after running dry, until 10 ms of sound is waiting.
+	// False after running dry, until a transfer's worth plus 10 ms of sound is waiting.
 	private bool microphonePrimed;
 
 	private const int MicrophonePrimeSamples = 2 * 480;
@@ -148,7 +149,7 @@ public sealed class VirtualDualSense : IUsbIpDevice
 		Span<short> samples = MemoryMarshal.Cast<byte, short>(data.AsSpan());
 		lock (microphone)
 		{
-			if (!microphonePrimed && microphoneCount >= MicrophonePrimeSamples)
+			if (!microphonePrimed && microphoneCount >= samples.Length + MicrophonePrimeSamples)
 			{
 				microphonePrimed = true;
 			}
@@ -376,7 +377,8 @@ public sealed class VirtualDualSense : IUsbIpDevice
 			(0x80, 0) or (0x81, 0) or (0x82, 0) => [0, 0],
 			(0x80, 8) => [1],
 			(0x81, 10) => [Alternate(index)],
-			(0x00, 9) or (0x00, 1) or (0x01, 1) or (0x02, 1) or (0x00, 3) or (0x01, 3) or (0x02, 3) => [],
+			(0x00, 9) => SetConfiguration(),
+			(0x00, 1) or (0x01, 1) or (0x02, 1) or (0x00, 3) or (0x01, 3) or (0x02, 3) => [],
 			(0x01, 11) => SetAlternate(index, value),
 			(0xA1, 1) => GetReport(value),
 			(0x21, 9) => SetReport(value, urb.Data),
@@ -452,6 +454,27 @@ public sealed class VirtualDualSense : IUsbIpDevice
 		{
 			return alternateSettings.TryGetValue(index, out byte alternate) ? alternate : (byte)0;
 		}
+	}
+
+	// A (re)configuration puts every interface back on alternate setting 0, which stops a microphone that was recording.
+	private byte[] SetConfiguration()
+	{
+		bool recording;
+		lock (gate)
+		{
+			recording = Alternate(DualSenseUsbDescriptors.MicrophoneInterface) != 0;
+			alternateSettings.Clear();
+		}
+		if (recording)
+		{
+			lock (microphone)
+			{
+				microphoneCount = 0;
+				microphonePrimed = false;
+			}
+			MicrophoneOpened?.Invoke(false);
+		}
+		return [];
 	}
 
 	private byte[] SetAlternate(ushort index, ushort value)

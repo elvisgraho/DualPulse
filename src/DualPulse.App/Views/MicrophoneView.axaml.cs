@@ -20,29 +20,35 @@ public partial class MicrophoneView : UserControl
 
 	private bool running;
 
+	// The page that was started, stopped even if the data context has already gone when the page leaves.
+	private MicrophoneViewModel? started;
+
 	public MicrophoneView()
 	{
 		InitializeComponent();
-		timer.Tick += (_, _) => (DataContext as MicrophoneViewModel)?.Refresh();
+		timer.Tick += (_, _) => started?.Refresh();
 	}
 
 	private void Update()
 	{
-		bool shown = watched.Count > 0 && watched.All(v => v.IsVisible) && window is { WindowState: not WindowState.Minimized };
-		if (shown == running || DataContext is not MicrophoneViewModel page)
+		bool shown = watched.Count > 0 && watched.All(v => v.IsVisible) && window is { WindowState: not WindowState.Minimized }
+			&& DataContext is MicrophoneViewModel;
+		if (shown == running)
 		{
 			return;
 		}
 		running = shown;
 		if (shown)
 		{
-			page.Start();
+			started = (MicrophoneViewModel)DataContext!;
+			started.Start();
 			timer.Start();
 		}
 		else
 		{
 			timer.Stop();
-			page.Stop();
+			started?.Stop();
+			started = null;
 		}
 	}
 

@@ -501,6 +501,23 @@ public sealed class EmulationServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task OnUsb_MicrophoneFailingToClose_StillLetsTheGameGo()
+	{
+		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
+		pad.SetMicrophoneOpen(true);
+		TestReports.WaitUntil(() => usbAudio.Microphone != null);
+		usbAudio.Microphone!.FailToClose = true;
+
+		settings.Update(s => s with { Emulation = null });
+
+		// The rest of the undo still ran: the game's audio no longer reaches the controller's sound device.
+		TestReports.WaitUntil(() => pad.Disposed);
+		int written = usbAudio.Stream?.Written.Count ?? 0;
+		pad.SendSpeaker(GameQuad());
+		Assert.Equal(written, usbAudio.Stream?.Written.Count ?? 0);
+	}
+
+	[Fact]
 	public async Task OnBluetooth_RecordingFromTheVirtualMicrophone_OpensNothing()
 	{
 		(_, FakeDualSensePad pad) = await ConnectDualSenseAsync();
@@ -535,9 +552,19 @@ public sealed class EmulationServiceTests : IDisposable
 	{
 		public bool Disposed { get; private set; }
 
+		// Closing fails, as when the device was just removed.
+		public bool FailToClose { get; set; }
+
 		public void Feed(short[] stereo) => blocks(stereo);
 
-		public void Dispose() => Disposed = true;
+		public void Dispose()
+		{
+			Disposed = true;
+			if (FailToClose)
+			{
+				throw new System.Runtime.InteropServices.COMException("The device was removed.");
+			}
+		}
 	}
 
 	private sealed class FakeUsbStream : IControllerAudioStream

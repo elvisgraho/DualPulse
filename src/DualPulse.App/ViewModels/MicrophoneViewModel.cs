@@ -92,7 +92,10 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 
 	private int volume;
 
-	// The controller microphone's Windows input volume, 0-100.
+	// When the slider last moved: device checks started before then don't bring back the old volume.
+	private long volumeSetAt;
+
+	// The controller microphone's Windows input volume, 0-100 (written off the UI thread).
 	public int Volume
 	{
 		get => volume;
@@ -101,7 +104,9 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 			value = Math.Clamp(value, 0, 100);
 			if (SetProperty(ref volume, value))
 			{
-				usbAudio?.SetMicrophoneVolume(value);
+				volumeSetAt = time.GetTimestamp();
+				IControllerUsbAudio? audio = usbAudio;
+				_ = Task.Run(() => audio?.SetMicrophoneVolume(value));
 			}
 		}
 	}
@@ -128,8 +133,9 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		set => UpdateMicrophone(m => m with { GateThresholdDb = Math.Clamp(value, -70, -20) });
 	}
 
-	// The gate's threshold on the top waveform (linear, 0-1); 0 when the gate doesn't apply.
-	public double GateLine => ShowVirtual && NoiseGate ? Math.Pow(10, GateThresholdDb / 20.0) : 0;
+	// The gate's threshold on the top waveform (linear, 0-1); 0 when the gate doesn't apply. The gate measures average
+	// loudness (RMS) and the waveform shows peaks, which in speech sit about 10 dB higher, so the line is drawn there.
+	public double GateLine => ShowVirtual && NoiseGate ? Math.Pow(10, (GateThresholdDb + 10) / 20.0) : 0;
 
 	public int BoostDb
 	{
@@ -188,12 +194,13 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		}
 		if (deviceCheck == null && (lastDeviceCheck is not { } checkedAt || time.GetElapsedTime(checkedAt) >= DeviceCheckInterval))
 		{
-			lastDeviceCheck = time.GetTimestamp();
+			long startedAt = time.GetTimestamp();
+			lastDeviceCheck = startedAt;
 			IControllerUsbAudio? audio = usbAudio;
 			deviceCheck = Task.Run(() =>
 			{
 				(string? real, string? virtualName) = audio?.MicrophoneNames() ?? (null, null);
-				return new DeviceInfo(onCable ? real : null, virtualName, onCable ? audio?.MicrophoneVolume() : null);
+				return new DeviceInfo(onCable ? real : null, virtualName, onCable ? audio?.MicrophoneVolume() : null, startedAt);
 			});
 		}
 		if (started && onCable)
@@ -228,14 +235,14 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		(VirtualPeaks, VirtualProgress) = monitor?.Levels.Live() ?? ([], 0);
 	}
 
-	private sealed record DeviceInfo(string? RealName, string? VirtualName, int? Volume);
+	private sealed record DeviceInfo(string? RealName, string? VirtualName, int? Volume, long StartedAt);
 
 	private void Apply(DeviceInfo info)
 	{
 		RealName = info.RealName;
 		VirtualName = info.VirtualName;
 		HasVolume = info.Volume != null;
-		if (info.Volume is { } percent && percent != volume)
+		if (info.Volume is { } percent && percent != volume && info.StartedAt > volumeSetAt)
 		{
 			volume = percent;
 			OnPropertyChanged(nameof(Volume));
