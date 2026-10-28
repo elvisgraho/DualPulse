@@ -532,8 +532,15 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		PadInput? lastSubmitted = null;
 		InputSnapshot last = Neutral;
 		HookState state = new();
+		// With controller shortcuts on, PS is DualPulse's modifier: held back from the game around a shortcut (PsGate).
+		PsGate psGate = new();
+		long started = time.GetTimestamp();
 		Action<InputSnapshot> forward = snapshot =>
 		{
+			if (settings.Current.ControllerShortcuts)
+			{
+				snapshot = snapshot with { Buttons = psGate.Filter(snapshot.Buttons, time.GetElapsedTime(started)) };
+			}
 			if (pcControl?.IsActive == true)
 			{
 				snapshot = Neutral;

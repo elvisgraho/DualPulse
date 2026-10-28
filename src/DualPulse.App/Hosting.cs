@@ -61,6 +61,8 @@ internal static class Hosting
 		builder.Services.AddSingleton<MicMuteService>();
 		builder.Services.AddSingleton<IMicMuteService>(s => s.GetRequiredService<MicMuteService>());
 		builder.Services.AddSingleton<LightingService>();
+		builder.Services.AddSingleton(s => new ShortcutService(s.GetRequiredService<IControllerService>(), s.GetRequiredService<ISettingsService>(),
+			s.GetRequiredService<INotifier>(), s.GetRequiredService<LightingService>().ShowNumber, s.GetRequiredService<IRumbleService>()));
 		builder.Services.AddSingleton<RumbleService>();
 		builder.Services.AddSingleton<AudioHapticsService>();
 		builder.Services.AddSingleton<ControllerAudioService>();
@@ -84,6 +86,7 @@ internal static class Hosting
 		builder.Services.AddHostedService(s => s.GetRequiredService<MicMuteService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<SteamInputWatch>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<LightingService>());
+		builder.Services.AddHostedService(s => s.GetRequiredService<ShortcutService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<RumbleService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<AudioHapticsService>());
 		builder.Services.AddHostedService(s => s.GetRequiredService<ControllerAudioService>());

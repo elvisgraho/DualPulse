@@ -43,6 +43,20 @@
 
       <Border Classes="card">
         <StackPanel Spacing="16">
+          <TextBlock Classes="caption" Text="CONTROLLER SHORTCUTS" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Shortcuts with the PS button" />
+              <TextBlock Classes="caption" TextWrapping="Wrap"
+                         Text="Hold PS + D-pad Right/Left: profile · Up/Down: trigger preset · Triangle: turn off · Options: PC control" />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding ControllerShortcuts}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="APP" />
           <Grid ColumnDefinitions="*,16,Auto">
             <StackPanel Spacing="2">

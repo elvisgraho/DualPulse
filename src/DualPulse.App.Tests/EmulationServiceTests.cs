@@ -229,6 +229,66 @@ public sealed class EmulationServiceTests : IDisposable
 		TestReports.WaitUntil(() => pad.LastSubmitted?.RightX > 128);
 	}
 
+	private int reportNumber;
+
+	// A USB input report with these buttons held (the D-pad is a hat value in the low nibble of byte 8).
+	private void Report(FakeDevice device, Buttons buttons, FakePad _)
+	{
+		byte[] report = TestReports.Fixture("idle-usb");
+		uint bits = (uint)buttons;
+		int hat = (buttons & Buttons.DpadUp) != 0 ? 0 : (buttons & Buttons.DpadRight) != 0 ? 2 : (buttons & Buttons.DpadDown) != 0 ? 4
+			: (buttons & Buttons.DpadLeft) != 0 ? 6 : 8;
+		report[1 + 7] = (byte)(((bits & 0x0F) << 4) | (uint)hat);
+		report[1 + 8] = (byte)((bits >> 4) & 0xFF);
+		report[1 + 9] = (byte)((uint)(report[1 + 9] & 0xF8) | ((bits >> 12) & 0x07));
+		report[1 + 27] = (byte)++reportNumber;
+		device.Latest.Feed(report);
+		TestReports.WaitUntil(() => controller.Session!.Latest?.Buttons == buttons);
+		// The pad may get nothing new (PS held back): give the forwarding a moment either way.
+		Thread.Sleep(30);
+	}
+
+	[Fact]
+	public async Task Shortcuts_PsWithTheDpad_NeverReachTheGame()
+	{
+		FakeDevice device = transport.Add(FakeHidTransport.UsbPath);
+		await controller.StartAsync(TestContext.Current.CancellationToken);
+		FakePad pad = backend.Created[^1];
+
+		Report(device, Buttons.Ps, pad);
+		Report(device, Buttons.Ps | Buttons.DpadRight, pad);
+		Report(device, Buttons.None, pad);
+
+		Assert.DoesNotContain(pad.SubmittedButtons, b => (b & (Buttons.Ps | Buttons.DpadRight)) != 0);
+	}
+
+	[Fact]
+	public async Task Shortcuts_APsTap_StillReachesTheGame()
+	{
+		FakeDevice device = transport.Add(FakeHidTransport.UsbPath);
+		await controller.StartAsync(TestContext.Current.CancellationToken);
+		FakePad pad = backend.Created[^1];
+
+		Report(device, Buttons.Ps, pad);
+		Assert.False(pad.LastSubmitted!.Value.Buttons.HasFlag(Buttons.Ps));
+		Report(device, Buttons.None, pad);
+
+		Assert.True(pad.LastSubmitted!.Value.Buttons.HasFlag(Buttons.Ps));
+	}
+
+	[Fact]
+	public async Task ShortcutsOff_PsPassesAtOnce()
+	{
+		settings.Update(s => s with { ControllerShortcuts = false });
+		FakeDevice device = transport.Add(FakeHidTransport.UsbPath);
+		await controller.StartAsync(TestContext.Current.CancellationToken);
+		FakePad pad = backend.Created[^1];
+
+		Report(device, Buttons.Ps, pad);
+
+		Assert.True(pad.LastSubmitted!.Value.Buttons.HasFlag(Buttons.Ps));
+	}
+
 	[Fact]
 	public async Task Emulation_RemappedButton_ReachesTheGameAsItsTarget()
 	{

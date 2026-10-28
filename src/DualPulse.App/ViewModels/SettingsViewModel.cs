@@ -60,6 +60,20 @@ public sealed partial class SettingsViewModel : ObservableObject
 		}
 	}
 
+	// Hold PS and press the D-pad to switch profile or trigger preset (ShortcutService).
+	public bool ControllerShortcuts
+	{
+		get => settings.Current.ControllerShortcuts;
+		set
+		{
+			if (value != settings.Current.ControllerShortcuts)
+			{
+				settings.Update(s => s with { ControllerShortcuts = value });
+				OnPropertyChanged();
+			}
+		}
+	}
+
 	// Shown after Copy diagnostics.
 	[ObservableProperty]
 	public partial string DiagnosticsStatus { get; private set; } = "";

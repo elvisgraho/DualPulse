@@ -328,10 +328,17 @@ internal sealed class FakePad(PadKind kind) : IVirtualPad
 
 	public event Action<RumbleFeedback>? Feedback;
 
+	// Every button state the pad was given, in order.
+	public List<Buttons> SubmittedButtons { get; } = [];
+
 	public InputSnapshot? LastSubmitted { get; private set; }
 
 	public void Submit(in InputSnapshot input)
 	{
+		lock (SubmittedButtons)
+		{
+			SubmittedButtons.Add(input.Buttons);
+		}
 		LastSubmitted = input;
 		Interlocked.Increment(ref submitted);
 	}

@@ -59,6 +59,19 @@ public sealed class LightingServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task ShowNumber_ThePlayerLedsShowItForAMoment_ThenGoBack()
+	{
+		settings.Update(s => s with { Lighting = new LightingSettings(PlayerLeds: PlayerLedPattern.Player1) });
+		await ConnectAsync();
+
+		lighting.ShowNumber(3);
+		Assert.Equal(0b10101, controller.Session!.Output.PlayerLeds);
+
+		time.Advance(TimeSpan.FromSeconds(2));
+		Assert.Equal(0b00100, controller.Session.Output.PlayerLeds);
+	}
+
+	[Fact]
 	public async Task Lighting_DefaultIsAccentAtFullBrightness()
 	{
 		await ConnectAsync();

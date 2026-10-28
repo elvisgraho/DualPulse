@@ -72,6 +72,11 @@ public sealed class LightingService : IHostedService, IDisposable
 		controller.SessionStarted -= OnSessionStarted;
 		controller.SessionEnded -= OnSessionEnded;
 		settings.Changed -= OnSettingsChanged;
+		lock (gate)
+		{
+			numberTimer?.Dispose();
+			numberTimer = null;
+		}
 		if (mods != null)
 		{
 			mods.Released -= Reschedule;
@@ -104,6 +109,39 @@ public sealed class LightingService : IHostedService, IDisposable
 	private void OnSettingsChanged(AppSettings current)
 	{
 		Reschedule();
+	}
+
+	private static readonly TimeSpan NumberShownFor = TimeSpan.FromSeconds(1.2);
+
+	// The player-LED pattern of a number shown for a moment (controller shortcuts), and its end.
+	private byte? shownNumber;
+
+	private ITimer? numberTimer;
+
+	// Shows 1-4 on the player LEDs (as player numbers) for a moment, then the usual pattern again.
+	public void ShowNumber(int number)
+	{
+		PlayerLedPattern pattern = Math.Clamp(number, 1, 4) switch
+		{
+			1 => PlayerLedPattern.Player1,
+			2 => PlayerLedPattern.Player2,
+			3 => PlayerLedPattern.Player3,
+			_ => PlayerLedPattern.Player4
+		};
+		lock (gate)
+		{
+			shownNumber = LightingEngine.PlayerLedBits(pattern);
+			numberTimer?.Dispose();
+			numberTimer = time.CreateTimer(_ =>
+			{
+				lock (gate)
+				{
+					shownNumber = null;
+					Apply();
+				}
+			}, null, NumberShownFor, Timeout.InfiniteTimeSpan);
+			Apply();
+		}
 	}
 
 	private void Reschedule()
@@ -159,7 +197,7 @@ public sealed class LightingService : IHostedService, IDisposable
 		Rgb lightbar = LightingEngine.Lightbar(lighting.Mode, current.EffectiveLightbar, lighting.Brightness, elapsed, session.Battery.Level);
 		// Until the first report the battery reads as empty; only a real reading may flash the LEDs.
 		bool lowFlash = lighting.LowBatteryFlash && session.Latest != null;
-		byte playerLeds = LightingEngine.PlayerLedBits(lighting.PlayerLeds, session.Battery, lowFlash, elapsed);
+		byte playerLeds = shownNumber ?? LightingEngine.PlayerLedBits(lighting.PlayerLeds, session.Battery, lowFlash, elapsed);
 		OutputState output = session.Output;
 		// Parts a game mod currently controls are left as they are.
 		if (mods != null)

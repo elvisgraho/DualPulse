@@ -15,6 +15,12 @@ public interface IRumbleService
 
 	// What the motors (or, over Bluetooth, the haptics) are playing now, after strength and mute.
 	(byte Left, byte Right) Levels { get; }
+
+	// A short tick on the light motor, as feedback (callers use it over Bluetooth only: on the cable classic rumble
+	// switches the haptics off until the controller is power-cycled).
+	void Pulse()
+	{
+	}
 }
 
 // Owns the controller's motors and rumble mode: scales and mutes game rumble per the settings, runs test pulses and
@@ -77,6 +83,19 @@ public sealed class RumbleService : IRumbleService, IHostedService, IDisposable
 			ApplyMotors();
 		}
 	}
+
+	public void Pulse()
+	{
+		lock (gate)
+		{
+			testTimer?.Dispose();
+			test = (0, TestLevel);
+			testTimer = time.CreateTimer(_ => EndTest(), null, PulseDuration, Timeout.InfiniteTimeSpan);
+			ApplyMotors();
+		}
+	}
+
+	private static readonly TimeSpan PulseDuration = TimeSpan.FromMilliseconds(80);
 
 	public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 

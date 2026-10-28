@@ -53,6 +53,17 @@ public sealed class SettingsViewModelTests
 	}
 
 	[Fact]
+	public void Settings_ControllerShortcuts_AreOnByDefault_AndCanBeSwitchedOff()
+	{
+		SettingsViewModel viewModel = new(settings, @"C:\data\logs", opened.Add);
+		Assert.True(viewModel.ControllerShortcuts);
+
+		viewModel.ControllerShortcuts = false;
+
+		Assert.False(settings.Current.ControllerShortcuts);
+	}
+
+	[Fact]
 	public void Settings_UpdateCheck_IsOptIn_AndANewVersionLinksToItsPage()
 	{
 		FakeUpdateService updates = new();
