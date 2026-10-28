@@ -108,7 +108,13 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 
 	private MicrophoneSettings Microphone => settings.Current.EffectiveMicrophone;
 
-	// What games hear (DualSense mode): the noise gate and a boost of 0-12 dB.
+	// What games hear (DualSense mode): the low cut, the noise gate and a boost of 0-12 dB.
+	public bool LowCut
+	{
+		get => Microphone.LowCut;
+		set => UpdateMicrophone(m => m with { LowCut = value });
+	}
+
 	public bool NoiseGate
 	{
 		get => Microphone.NoiseGate;
@@ -271,6 +277,7 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		if (updated != Microphone)
 		{
 			settings.Update(s => s with { Microphone = updated });
+			OnPropertyChanged(nameof(LowCut));
 			OnPropertyChanged(nameof(NoiseGate));
 			OnPropertyChanged(nameof(GateThresholdDb));
 			OnPropertyChanged(nameof(GateLine));

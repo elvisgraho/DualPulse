@@ -189,12 +189,14 @@ public sealed class MicrophoneViewModelTests : IDisposable
 		Assert.Equal(0, page.BoostDb);
 
 		Assert.Equal(-45, page.GateThresholdDb);
+		Assert.True(page.LowCut);
 
 		page.NoiseGate = false;
 		page.GateThresholdDb = -38;
 		page.BoostDb = 9;
+		page.LowCut = false;
 
-		Assert.Equal(new MicrophoneSettings(BoostDb: 9, NoiseGate: false, GateThresholdDb: -38), settings.Current.EffectiveMicrophone);
+		Assert.Equal(new MicrophoneSettings(BoostDb: 9, NoiseGate: false, GateThresholdDb: -38, LowCut: false), settings.Current.EffectiveMicrophone);
 	}
 
 	[Fact]

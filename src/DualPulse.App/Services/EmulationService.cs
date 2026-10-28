@@ -733,7 +733,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 	}
 
 	// While the host records from the virtual DualSense's microphone, the real controller's own microphone (USB) feeds
-	// it, gated and boosted as the Microphone settings say; closed when recording stops or the game hook ends. Opening runs off
+	// it, filtered, gated and boosted as the Microphone settings say; closed when recording stops or the game hook ends. Opening runs off
 	// the USB/IP thread.
 	private sealed class MicrophoneRoute(IControllerUsbAudio audio, IDualSensePad pad, VirtualMicrophoneMonitor? monitor, ISettingsService settings,
 		ILogger logger)
@@ -771,6 +771,7 @@ public sealed class EmulationService : IEmulationService, IHostedService, IDispo
 		private void Feed(ReadOnlySpan<short> stereo)
 		{
 			MicrophoneSettings wanted = settings.Current.EffectiveMicrophone;
+			processor.LowCut = wanted.LowCut;
 			processor.NoiseGate = wanted.NoiseGate;
 			processor.GateThresholdDb = wanted.GateThresholdDb;
 			processor.BoostDb = wanted.BoostDb;

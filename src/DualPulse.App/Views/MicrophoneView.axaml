@@ -37,6 +37,13 @@
           <TextBlock TextWrapping="Wrap" Text="{Binding VirtualStatus}" />
           <Grid ColumnDefinitions="*,16,Auto">
             <StackPanel Spacing="2">
+              <TextBlock Text="Low cut" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Removes rumble below your voice." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding LowCut}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
               <TextBlock Text="Noise gate" />
               <TextBlock Classes="caption" TextWrapping="Wrap" Text="Quiet between words; ignores mouth clicks. The dashed line above shows where it opens." />
             </StackPanel>

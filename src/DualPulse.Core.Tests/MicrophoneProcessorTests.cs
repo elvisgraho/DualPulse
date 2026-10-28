@@ -134,4 +134,28 @@ public sealed class MicrophoneProcessorTests
 
 		Assert.Equal(input, Run(new MicrophoneProcessor(), input));
 	}
+
+	private static short[] Sine(double hz, int ms, short amplitude) =>
+		[.. Enumerable.Range(0, ms * Ms).SelectMany(f => { short v = (short)Math.Round(amplitude * Math.Sin(2 * Math.PI * hz * f / 48000)); return new[] { v, v }; })];
+
+	private static double Rms(short[] stereo) => Math.Sqrt(stereo.Average(s => (double)s * s));
+
+	[Fact]
+	public void LowCut_RemovesLowRumble()
+	{
+		short[] output = Run(new MicrophoneProcessor { LowCut = true }, Sine(30, 1000, 10000));
+
+		// After it settles: a 30 Hz rumble keeps under 15% of its level.
+		Assert.True(Rms(output[(200 * Ms * 2)..]) < 0.15 * Rms(Sine(30, 800, 10000)));
+	}
+
+	[Fact]
+	public void LowCut_LeavesVoiceAlone()
+	{
+		short[] input = Sine(1000, 500, 10000);
+
+		short[] output = Run(new MicrophoneProcessor { LowCut = true }, input);
+
+		Assert.InRange(Rms(output[(100 * Ms * 2)..]) / Rms(input[(100 * Ms * 2)..]), 0.98, 1.02);
+	}
 }

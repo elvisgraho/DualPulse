@@ -419,7 +419,7 @@ public sealed class EmulationServiceTests : IDisposable
 	public async Task OnUsb_RecordingFromTheVirtualMicrophone_UsesTheControllersOwn()
 	{
 		// Ungated, to see the route itself (the gate is on by default and delays the sound).
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseGate: false) });
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseGate: false, LowCut: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 
 		pad.SetMicrophoneOpen(true);
@@ -433,7 +433,7 @@ public sealed class EmulationServiceTests : IDisposable
 	public async Task OnUsb_Recording_ShowsInTheMonitor_WithWhatTheGameGets()
 	{
 		// Ungated, to see the route itself (the gate is on by default and delays the sound).
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseGate: false) });
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(NoiseGate: false, LowCut: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 		Assert.False(microphoneMonitor.InUse);
 
@@ -451,7 +451,7 @@ public sealed class EmulationServiceTests : IDisposable
 	[Fact]
 	public async Task OnUsb_GamesHearTheMicrophoneBoosted_AsSet()
 	{
-		settings.Update(s => s with { Microphone = new MicrophoneSettings(BoostDb: 6, NoiseGate: false) });
+		settings.Update(s => s with { Microphone = new MicrophoneSettings(BoostDb: 6, NoiseGate: false, LowCut: false) });
 		FakeDualSensePad pad = await ConnectDualSenseOverUsbAsync();
 		pad.SetMicrophoneOpen(true);
 		TestReports.WaitUntil(() => usbAudio.Microphone != null);
@@ -473,7 +473,7 @@ public sealed class EmulationServiceTests : IDisposable
 		usbAudio.Microphone!.Feed(Enumerable.Repeat((short)100, 2 * 4800).ToArray());
 
 		Assert.Equal(2 * 4800, pad.MicrophoneWritten.Count);
-		Assert.All(pad.MicrophoneWritten, s => Assert.InRange(s, 0, 10));
+		Assert.All(pad.MicrophoneWritten, s => Assert.InRange(s, -10, 10));
 	}
 
 	[Fact]
