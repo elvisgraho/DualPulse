@@ -480,6 +480,31 @@ if (args.Length >= 1 && args[0] == "audio-devices")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "mic-sessions")
+{
+	// Which processes are recording from the DualSense microphones right now (active capture sessions).
+	using NAudio.CoreAudioApi.MMDeviceEnumerator enumerator = new();
+	foreach (NAudio.CoreAudioApi.MMDevice device in enumerator.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
+	{
+		if (!device.FriendlyName.Contains("DualSense", StringComparison.OrdinalIgnoreCase))
+		{
+			continue;
+		}
+		NAudio.CoreAudioApi.SessionCollection sessions = device.AudioSessionManager.Sessions;
+		List<string> active = [];
+		for (int i = 0; i < sessions.Count; i++)
+		{
+			if (sessions[i].State == NAudio.CoreAudioApi.Interfaces.AudioSessionState.AudioSessionStateActive)
+			{
+				uint pid = sessions[i].GetProcessID;
+				string name = pid == 0 ? "system" : System.Diagnostics.Process.GetProcessById((int)pid).ProcessName;
+				active.Add($"{name} ({pid})");
+			}
+		}
+		Console.WriteLine($"{device.FriendlyName}: {(active.Count == 0 ? "nobody recording" : string.Join(", ", active))}");
+	}
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "mic-threads")
 {
 	// As in the app: the microphone is created on a UI (STA) thread, the Mute button toggles it from the controller's
