@@ -33,6 +33,49 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 
 	private readonly IFileDialogs? files;
 
+	// Renaming the selected profile (a small card like New profile).
+	[ObservableProperty]
+	public partial bool IsRenamingProfile { get; private set; }
+
+	[ObservableProperty]
+	[NotifyCanExecuteChangedFor(nameof(SaveRenameCommand))]
+	public partial string RenameProfileName { get; set; } = "";
+
+	private bool CanRename() => selection?.Selected != null;
+
+	[RelayCommand(CanExecute = nameof(CanRename))]
+	private void StartRenameProfile()
+	{
+		RenameProfileName = selection?.Selected?.Name ?? "";
+		IsRenamingProfile = true;
+	}
+
+	[RelayCommand]
+	private void CancelRename() => IsRenamingProfile = false;
+
+	private bool CanSaveRename() => !string.IsNullOrWhiteSpace(RenameProfileName);
+
+	// A game profile only changes its name; a named one's id follows the name (a taken name gets a number), and stays
+	// chosen and selected if it was.
+	[RelayCommand(CanExecute = nameof(CanSaveRename))]
+	private void SaveRename()
+	{
+		IsRenamingProfile = false;
+		if (settings == null || selection?.Selected is not { } old)
+		{
+			return;
+		}
+		GameProfile renamed = old.IsNamed
+			? GameProfile.Named(RenameProfileName, [.. settings.Current.EffectiveProfiles.Where(p => p != old)]) with { Triggers = old.Triggers, Gyro = old.Gyro, Sticks = old.Sticks }
+			: old with { Name = RenameProfileName.Trim() };
+		settings.Update(s => s with
+		{
+			Profiles = [.. s.EffectiveProfiles.Select(p => string.Equals(p.Exe, old.Exe, StringComparison.OrdinalIgnoreCase) ? renamed : p)],
+			ChosenProfile = s.ChosenProfile == old.Exe ? renamed.Exe : s.ChosenProfile
+		});
+		selection.Select(renamed);
+	}
+
 	// After Export or Import: what happened.
 	[ObservableProperty]
 	public partial string ProfileFileStatus { get; private set; } = "";
@@ -266,6 +309,7 @@ public sealed partial class ControllerPageViewModel : ObservableObject
 	private void RefreshProfiles()
 	{
 		ExportProfileCommand.NotifyCanExecuteChanged();
+		StartRenameProfileCommand.NotifyCanExecuteChanged();
 		IReadOnlyList<GameProfile> games = settings?.Current.EffectiveProfiles ?? [];
 		IReadOnlyList<ProfileChoice> choices = [new("Default", null), .. games.Select(p => new ProfileChoice(p.Name, p.Exe))];
 		for (int i = 0; i < choices.Count; i++)

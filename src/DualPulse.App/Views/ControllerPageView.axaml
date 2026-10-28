@@ -44,6 +44,7 @@
             <Button.Flyout>
               <MenuFlyout>
                 <MenuItem Header="Import profile..." Command="{Binding ImportProfileCommand}" />
+                <MenuItem Header="Rename this profile..." Command="{Binding StartRenameProfileCommand}" />
                 <MenuItem Header="Export this profile..." Command="{Binding ExportProfileCommand}" />
               </MenuFlyout>
             </Button.Flyout>
@@ -63,6 +64,18 @@
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Content="Create" Command="{Binding CreateProfileCommand}" IsDefault="True" />
           <Button Content="Cancel" Command="{Binding CancelNewProfileCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Renaming the selected profile -->
+    <Border Grid.Row="1" Classes="card" Margin="0,16,16,0" MaxWidth="720" HorizontalAlignment="Left" IsVisible="{Binding IsRenamingProfile}">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="caption" Text="RENAME PROFILE" />
+        <TextBox Text="{Binding RenameProfileName}" MaxLength="40" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Save" Command="{Binding SaveRenameCommand}" IsDefault="True" />
+          <Button Content="Cancel" Command="{Binding CancelRenameCommand}" />
         </StackPanel>
       </StackPanel>
     </Border>
