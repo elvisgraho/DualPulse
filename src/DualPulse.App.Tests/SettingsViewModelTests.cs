@@ -44,7 +44,7 @@ public sealed class SettingsViewModelTests
 	{
 		SettingsViewModel viewModel = CreateViewModel();
 
-		Assert.Equal("0.4.3", viewModel.Version);
+		Assert.Equal("0.4.4", viewModel.Version);
 		viewModel.OpenLogsFolderCommand.Execute(null);
 		viewModel.OpenThirdPartyNoticesCommand.Execute(null);
 
