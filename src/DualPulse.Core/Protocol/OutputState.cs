@@ -29,6 +29,7 @@ public enum LedBrightness : byte
 // free for the Bluetooth haptics stream (report 0x32): no rumble, no power reduction. AudioOutput and AudioVolume
 // (0-100) select and set the speaker or headset for Bluetooth audio. GameBlock is the 47-byte common block a game sent
 // to a virtual DualSense; while set it is sent as it is instead of the block composed from the fields above.
+// MicMuted switches the controller's own microphone mute (null leaves it as it is).
 public sealed record OutputState(
 	Rgb Lightbar,
 	byte PlayerLeds,
@@ -43,7 +44,8 @@ public sealed record OutputState(
 	bool HapticsMode = false,
 	AudioOutput AudioOutput = AudioOutput.Off,
 	byte AudioVolume = 70,
-	byte[]? GameBlock = null)
+	byte[]? GameBlock = null,
+	bool? MicMuted = null)
 {
 	public const int CommonBlockLength = 47;
 

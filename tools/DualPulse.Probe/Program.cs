@@ -423,6 +423,27 @@ if (args.Length >= 1 && args[0] == "feature-reports")
 	}
 	return 0;
 }
+if (args.Length >= 2 && args[0] == "mic-hwmute")
+{
+	// Sets the real DualSense's own microphone mute (power save control, bit 0x10) on USB: "mic-hwmute on" / "off".
+	// Only the power-save part of the output report is marked valid, so lights and triggers stay as they are.
+	HidDevice? real = DeviceList.Local.GetHidDevices(SonyVendorId).FirstOrDefault(d => productIds.Contains(d.ProductID)
+		&& !DualPulse.Core.Devices.ControllerDiscovery.IsBluetooth(d.DevicePath)
+		&& string.IsNullOrEmpty(SafeSerial(d)));
+	if (real == null)
+	{
+		Console.Error.WriteLine("No real DualSense on USB.");
+		return 1;
+	}
+	using HidStream stream = real.Open();
+	byte[] report = new byte[real.GetMaxOutputReportLength()];
+	report[0] = 0x02;
+	report[1 + 1] = 0x02;
+	report[1 + 9] = (byte)(args[1] == "on" ? 0x10 : 0x00);
+	stream.Write(report);
+	Console.WriteLine($"microphone hardware mute {args[1]}");
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "sticks")
 {
 	// Samples the real DualSense's sticks on USB for N seconds (default 5) and prints each axis's range, to see how far

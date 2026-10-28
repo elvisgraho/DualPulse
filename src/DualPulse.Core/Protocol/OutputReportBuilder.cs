@@ -104,6 +104,7 @@ public static class OutputReportBuilder
 			commonOffset = 2;
 		}
 		WriteCommon(state, transport, report[commonOffset..], triggers, resetPower, motors);
+		ApplyMicMute(state.MicMuted, report[commonOffset..]);
 		if (transport == Transport.Bluetooth)
 		{
 			Span<byte> crcInput = stackalloc byte[BluetoothLength - 4 + 1];
@@ -119,6 +120,18 @@ public static class OutputReportBuilder
 	// send one only at start), and the haptics setup DualPulse uses itself goes in (power save off, keeping only the
 	// game's mic mute; low-pass filter; motor power reduction 0 unless the game sets it). Over Bluetooth the speaker
 	// volume is also mapped onto its audible range (0x3D-0x64; 0 stays mute).
+	// The controller's own microphone mute (power save bit 0x10), whatever the rest of the block is (a game's too).
+	// Null leaves the controller's mute as it is.
+	private static void ApplyMicMute(bool? muted, Span<byte> common)
+	{
+		if (muted is not { } mute)
+		{
+			return;
+		}
+		common[Flag1] |= PowerSaveControl;
+		common[PowerSaveOffset] = mute ? (byte)(common[PowerSaveOffset] | MicMutePowerSave) : (byte)(common[PowerSaveOffset] & ~MicMutePowerSave);
+	}
+
 	private static void AdaptGameBlock(Span<byte> common, bool bluetooth)
 	{
 		bool gamePowerSave = (common[Flag1] & PowerSaveControl) != 0;

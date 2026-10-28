@@ -13,6 +13,29 @@ public class OutputReportBuilderTests
 		return buffer[..length];
 	}
 
+	[Theory]
+	[InlineData(true, 0x10)]
+	[InlineData(false, 0x00)]
+	public void MicMuted_SetsOrClearsTheControllersOwnMicMute(bool muted, int powerSave)
+	{
+		// Windows' mute on the controller's microphone doesn't silence what programs record; the controller's own does.
+		byte[] r = Build(OutputState.Default with { MicMuted = muted }, Transport.Usb);
+
+		Assert.Equal(0x02, r[1 + 1] & 0x02);
+		Assert.Equal(powerSave, r[1 + 9]);
+	}
+
+	[Fact]
+	public void MicMuted_AlsoWithHapticsAndWithAGame()
+	{
+		byte[] haptics = Build(OutputState.Default with { MicMuted = true, HapticsMode = true }, Transport.Usb);
+		byte[] game = Build(OutputState.Default with { MicMuted = true, GameBlock = GameBlock() }, Transport.Usb);
+
+		Assert.Equal(0x10, haptics[1 + 9] & 0x10);
+		Assert.Equal(0x02, game[1 + 1] & 0x02);
+		Assert.Equal(0x10, game[1 + 9] & 0x10);
+	}
+
 	[Fact]
 	public void Usb_Default_HasIdAndFlags()
 	{

@@ -209,10 +209,13 @@ public sealed class LightingService : IHostedService, IDisposable
 		// With the Mute button driving the microphone, the mute LED shows whether it is muted.
 		MicLed micLed = micMute != null && lighting.MuteButtonMutesMic ? (micMute.IsMicMuted == true ? MicLed.On : MicLed.Off) : lighting.MicLed;
 		micLed = mods?.ControlsMicLed == true ? output.MicLed : micLed;
-		if (output.Lightbar == lightbar && output.PlayerLeds == playerLeds && output.PlayerLedBrightness == ledBrightness && output.MicLed == micLed)
+		// And the controller's own microphone mute follows Windows' (which alone doesn't silence what programs record).
+		bool? micMuted = micMute != null && lighting.MuteButtonMutesMic ? micMute.IsMicMuted == true : null;
+		if (output.Lightbar == lightbar && output.PlayerLeds == playerLeds && output.PlayerLedBrightness == ledBrightness && output.MicLed == micLed
+			&& output.MicMuted == micMuted)
 		{
 			return;
 		}
-		session.Apply(state => state with { Lightbar = lightbar, PlayerLeds = playerLeds, PlayerLedBrightness = ledBrightness, MicLed = micLed });
+		session.Apply(state => state with { Lightbar = lightbar, PlayerLeds = playerLeds, PlayerLedBrightness = ledBrightness, MicLed = micLed, MicMuted = micMuted });
 	}
 }

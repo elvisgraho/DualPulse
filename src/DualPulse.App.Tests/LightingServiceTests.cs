@@ -179,6 +179,36 @@ public sealed class LightingServiceTests : IDisposable
 	}
 
 	[Fact]
+	public async Task MuteButton_MutesTheControllersOwnMicrophone_ToFollowWindows()
+	{
+		// Windows' mute on the controller's microphone doesn't silence what programs record from it.
+		FakeMicrophone mic = new();
+		using MicMuteService micMute = new(controller, settings, mic);
+		using LightingService withMic = new(controller, settings, time, micMute: micMute);
+		await ConnectAsync();
+		Assert.False(controller.Session!.Output.MicMuted);
+
+		mic.SetFromWindows(true);
+		Assert.True(controller.Session.Output.MicMuted);
+
+		mic.SetFromWindows(false);
+		Assert.False(controller.Session.Output.MicMuted);
+	}
+
+	[Fact]
+	public async Task WithTheMicSettingOff_TheControllersMicMuteIsLeftAlone()
+	{
+		settings.Update(s => s with { Lighting = new LightingSettings(MuteButtonMutesMic: false) });
+		FakeMicrophone mic = new() { IsMuted = true };
+		using MicMuteService micMute = new(controller, settings, mic);
+		using LightingService withMic = new(controller, settings, time, micMute: micMute);
+
+		await ConnectAsync();
+
+		Assert.Null(controller.Session!.Output.MicMuted);
+	}
+
+	[Fact]
 	public async Task Lighting_MuteLed_UsesTheSavedChoice_WhenTheMicSettingIsOff()
 	{
 		settings.Update(s => s with { Lighting = new LightingSettings(MicLed: MicLed.Pulse, MuteButtonMutesMic: false) });
