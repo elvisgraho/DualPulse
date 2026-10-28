@@ -106,6 +106,27 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		}
 	}
 
+	private MicrophoneSettings Microphone => settings.Current.EffectiveMicrophone;
+
+	// What games hear (DualSense mode): RNNoise noise suppression, the voice gate and a boost of 0-12 dB.
+	public bool NoiseSuppression
+	{
+		get => Microphone.NoiseSuppression;
+		set => UpdateMicrophone(m => m with { NoiseSuppression = value });
+	}
+
+	public bool VoiceGate
+	{
+		get => Microphone.VoiceGate;
+		set => UpdateMicrophone(m => m with { VoiceGate = value });
+	}
+
+	public int BoostDb
+	{
+		get => Microphone.BoostDb;
+		set => UpdateMicrophone(m => m with { BoostDb = Math.Clamp(value, 0, 12) });
+	}
+
 	public IReadOnlyList<MicLedChoice> MicLedChoices { get; } =
 	[
 		new("Off", MicLed.Off),
@@ -233,6 +254,18 @@ public sealed partial class MicrophoneViewModel : ObservableObject
 		capture = null;
 		lastOpenAttempt = null;
 		levels.Clear();
+	}
+
+	private void UpdateMicrophone(Func<MicrophoneSettings, MicrophoneSettings> change)
+	{
+		MicrophoneSettings updated = change(Microphone);
+		if (updated != Microphone)
+		{
+			settings.Update(s => s with { Microphone = updated });
+			OnPropertyChanged(nameof(NoiseSuppression));
+			OnPropertyChanged(nameof(VoiceGate));
+			OnPropertyChanged(nameof(BoostDb));
+		}
 	}
 
 	private void UpdateLighting(Func<LightingSettings, LightingSettings> change)

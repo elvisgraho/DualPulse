@@ -19,7 +19,13 @@
           <Grid ColumnDefinitions="*,16,Auto">
             <StackPanel Spacing="2">
               <TextBlock Text="What games see" />
-              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Native: games use your DualSense as it is." />
+              <ItemsControl ItemsSource="{Binding ModePoints}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding StringFormat='• {0}'}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
             <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center"
                       ItemsSource="{Binding EmulationChoices}" SelectedItem="{Binding SelectedEmulation}">
@@ -31,7 +37,7 @@
             </ComboBox>
           </Grid>
           <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding ShowDualSenseHint}"
-                     Text="Games with DualSense support get adaptive triggers, lights and vibration, also over Bluetooth. Works best with Hide my DualSense on." />
+                     Text="Works best with Hide my DualSense on." />
           <Grid ColumnDefinitions="*,16,Auto" IsVisible="{Binding ShowDualSenseHint}">
             <StackPanel Spacing="2">
               <TextBlock Text="Game sound on the controller speaker" />

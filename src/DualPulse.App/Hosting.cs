@@ -49,6 +49,7 @@ internal static class Hosting
 		builder.Services.AddSingleton<ControllerService>();
 		builder.Services.AddSingleton<IControllerService>(s => s.GetRequiredService<ControllerService>());
 		builder.Services.AddSingleton<VirtualMicrophoneMonitor>();
+		builder.Services.AddSingleton<Func<DualPulse.Core.Audio.INoiseSuppressor?>>(DualPulse.Emulation.RNNoiseSuppressor.TryCreate);
 		builder.Services.AddSingleton<EmulationService>();
 		builder.Services.AddSingleton<IEmulationService>(s => s.GetRequiredService<EmulationService>());
 		builder.Services.AddSingleton<ModOverride>();

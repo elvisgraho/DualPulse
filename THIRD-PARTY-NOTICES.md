@@ -13,6 +13,8 @@ at the linked address.
 | Microsoft.Extensions.Hosting, Microsoft.Extensions.Logging.Abstractions, System.IO.Hashing | MIT | https://github.com/dotnet/runtime |
 | NAudio.Wasapi (Windows system-audio capture for haptics) | MIT | https://github.com/naudio/NAudio |
 | Concentus (Opus encoder for controller speaker and headset audio) | BSD 3-Clause | https://github.com/lostromb/concentus |
+| RNNoise (noise suppression for the microphone; native library) | BSD 3-Clause | https://github.com/xiph/rnnoise |
+| RNNoise.NET (YellowDogMan.RRNoise.NET, its .NET wrapper and binaries) | MIT | https://github.com/Yellow-Dog-Man/RNNoise.Net |
 
 Not bundled, installed separately by the user:
 

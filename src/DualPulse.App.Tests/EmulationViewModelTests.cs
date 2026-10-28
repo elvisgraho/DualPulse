@@ -65,6 +65,22 @@ public sealed class EmulationViewModelTests
 	}
 
 	[Fact]
+	public void EachMode_SaysInShortWhatGamesGet()
+	{
+		EmulationViewModel viewModel = CreateViewModel();
+
+		settings.Update(s => s with { Emulation = null });
+		Assert.Equal(["Games use your DualSense as it is.", "DualPulse's stick, button and gyro settings don't reach games."], viewModel.ModePoints);
+
+		settings.Update(s => s with { Emulation = PadKind.DualSense });
+		Assert.Equal(["Adaptive triggers, haptics and the speaker, also over Bluetooth.", "Your stick, button and gyro settings work in games.",
+			"Games get your microphone with DualPulse's noise filtering."], viewModel.ModePoints);
+
+		settings.Update(s => s with { Emulation = PadKind.Xbox360 });
+		Assert.Equal(["For games without DualSense support.", "Your stick, button and gyro settings work in games."], viewModel.ModePoints);
+	}
+
+	[Fact]
 	public void Driver_Installed_ShowsVersion()
 	{
 		EmulationViewModel viewModel = CreateViewModel();

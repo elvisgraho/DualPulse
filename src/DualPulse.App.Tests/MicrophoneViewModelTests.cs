@@ -183,6 +183,20 @@ public sealed class MicrophoneViewModelTests : IDisposable
 	}
 
 	[Fact]
+	public void Enhancements_DefaultToNoiseSuppressionOnly_AndPersist()
+	{
+		Assert.True(page.NoiseSuppression);
+		Assert.False(page.VoiceGate);
+		Assert.Equal(0, page.BoostDb);
+
+		page.NoiseSuppression = false;
+		page.VoiceGate = true;
+		page.BoostDb = 9;
+
+		Assert.Equal(new MicrophoneSettings(NoiseSuppression: false, VoiceGate: true, BoostDb: 9), settings.Current.EffectiveMicrophone);
+	}
+
+	[Fact]
 	public void MicHint_SaysWhetherThereIsAMicrophone()
 	{
 		FakeMicrophone mic = new();

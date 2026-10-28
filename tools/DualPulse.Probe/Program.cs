@@ -480,6 +480,49 @@ if (args.Length >= 1 && args[0] == "audio-devices")
 	}
 	return 0;
 }
+if (args.Length >= 1 && args[0] == "mic-clean")
+{
+	// Records 5 s from the controller's microphone and runs it through RNNoise: loudness before and after, and how
+	// often RNNoise heard speech.
+	DualPulse.Emulation.WindowsControllerUsbAudio audio = new();
+	List<short> recorded = [];
+	using (IDisposable? capture = audio.OpenMicrophone(stereo => { lock (recorded) { recorded.AddRange(stereo); } }))
+	{
+		if (capture == null)
+		{
+			Console.Error.WriteLine("No controller microphone.");
+			return 1;
+		}
+		Thread.Sleep(5000);
+	}
+	using DualPulse.Core.Audio.INoiseSuppressor? rnnoise = DualPulse.Emulation.RNNoiseSuppressor.TryCreate();
+	if (rnnoise == null)
+	{
+		Console.Error.WriteLine("RNNoise didn't load.");
+		return 1;
+	}
+	float[] frame = new float[480];
+	double before = 0, after = 0;
+	int frames = 0, speech = 0;
+	for (int start = 0; start + 960 <= recorded.Count; start += 960)
+	{
+		for (int i = 0; i < 480; i++)
+		{
+			frame[i] = (recorded[start + 2 * i] + recorded[start + 2 * i + 1]) / 2f;
+		}
+		double input = frame.Sum(v => (double)v * v);
+		float voice = rnnoise.Process(frame);
+		if (frames++ >= 100)
+		{
+			before += input;
+			after += frame.Sum(v => (double)v * v);
+			speech += voice >= 0.6f ? 1 : 0;
+		}
+	}
+	int measured = Math.Max(1, frames - 100);
+	Console.WriteLine($"{frames} frames; after the first second: level {10 * Math.Log10(before / measured / 480 / (32767.0 * 32767)):0.0} dBFS -> {10 * Math.Log10(Math.Max(after, 1e-9) / measured / 480 / (32767.0 * 32767)):0.0} dBFS ({10 * Math.Log10(Math.Max(after, 1e-9) / before):0.0} dB), speech in {speech * 100 / measured}% of frames");
+	return 0;
+}
 if (args.Length >= 1 && args[0] == "mic-sessions")
 {
 	// Which processes are recording from the DualSense microphones right now (active capture sessions).

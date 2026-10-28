@@ -44,6 +44,7 @@ public sealed partial class EmulationViewModel : ObservableObject
 		{
 			OnPropertyChanged(nameof(SelectedEmulation));
 			OnPropertyChanged(nameof(ShowDualSenseHint));
+			OnPropertyChanged(nameof(ModePoints));
 			OnPropertyChanged(nameof(ShowViGEmBus));
 			OnPropertyChanged(nameof(ShowUsbIp));
 			OnPropertyChanged(nameof(ShowRemaps));
@@ -98,6 +99,15 @@ public sealed partial class EmulationViewModel : ObservableObject
 	// The switch stays usable unless HidHide is absent, so hiding can always be turned off.
 	[ObservableProperty]
 	public partial bool CanToggleHide { get; private set; }
+
+	// What the chosen mode gives, in a few short points under the choice.
+	public IReadOnlyList<string> ModePoints => settings.Current.Emulation switch
+	{
+		null => ["Games use your DualSense as it is.", "DualPulse's stick, button and gyro settings don't reach games."],
+		PadKind.DualSense => ["Adaptive triggers, haptics and the speaker, also over Bluetooth.", "Your stick, button and gyro settings work in games.",
+			"Games get your microphone with DualPulse's noise filtering."],
+		_ => ["For games without DualSense support.", "Your stick, button and gyro settings work in games."]
+	};
 
 	// The virtual DualSense needs usbip-win2; the page says so while it is chosen.
 	public bool ShowDualSenseHint => settings.Current.Emulation == PadKind.DualSense;

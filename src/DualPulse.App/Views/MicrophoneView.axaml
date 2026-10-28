@@ -35,6 +35,26 @@
                      IsVisible="{Binding VirtualName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <controls:Waveform Height="64" Peaks="{Binding VirtualPeaks}" Progress="{Binding VirtualProgress}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding VirtualStatus}" />
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Noise suppression" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Removes fans, keyboard and hum." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding NoiseSuppression}" />
+          </Grid>
+          <Grid ColumnDefinitions="*,16,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Voice gate" />
+              <TextBlock Classes="caption" TextWrapping="Wrap" Text="Silent while you aren't talking." />
+            </StackPanel>
+            <ToggleSwitch Grid.Column="2" OnContent="" OffContent="" IsChecked="{Binding VoiceGate}" />
+          </Grid>
+          <Grid ColumnDefinitions="Auto,16,*,16,56">
+            <TextBlock VerticalAlignment="Center" Text="Boost" />
+            <Slider Grid.Column="2" Minimum="0" Maximum="12" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding BoostDb}" />
+            <TextBlock Grid.Column="4" Classes="secondary" VerticalAlignment="Center" HorizontalAlignment="Right"
+                       Text="{Binding BoostDb, StringFormat='+{0} dB'}" />
+          </Grid>
         </StackPanel>
       </Border>
 

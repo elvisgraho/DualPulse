@@ -52,6 +52,10 @@ public enum ControllerAudioOutput
 
 // PC sound on the controller over Bluetooth: the output device whose sound is forwarded (null = the default output),
 // where it plays and how loud (0-100).
+// What games hear from the virtual DualSense's microphone: noise suppression (RNNoise), a voice gate and a boost of
+// 0-12 dB (see MicrophoneProcessor).
+public sealed record MicrophoneSettings(bool NoiseSuppression = true, bool VoiceGate = false, int BoostDb = 0);
+
 public sealed record ControllerAudioSettings(bool Enabled = false, string? DeviceId = null, ControllerAudioOutput Output = ControllerAudioOutput.Auto, int Volume = 70);
 
 // The DSX-compatible mod server. Port 0 picks a free port (used by tests). WritePortFiles writes the port where
@@ -151,7 +155,8 @@ public sealed record AppSettings(
 	StickSettings? Sticks = null,
 	string? ChosenProfile = null,
 	bool GameLights = true,
-	bool GameTriggers = true)
+	bool GameTriggers = true,
+	MicrophoneSettings? Microphone = null)
 {
 	public static readonly Rgb AccentLightbar = new(0xC9, 0xA8, 0x6A);
 
@@ -172,6 +177,9 @@ public sealed record AppSettings(
 
 	[JsonIgnore]
 	public ControllerAudioSettings EffectiveAudio => Audio ?? new ControllerAudioSettings();
+
+	[JsonIgnore]
+	public MicrophoneSettings EffectiveMicrophone => Microphone ?? new MicrophoneSettings();
 
 	[JsonIgnore]
 	public IReadOnlyList<GameProfile> EffectiveProfiles => Profiles ?? [];
