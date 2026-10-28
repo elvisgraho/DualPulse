@@ -57,7 +57,7 @@ public sealed partial class ButtonRow : ObservableObject
 	}
 }
 
-// The Mapping page: PC control (the controller as mouse and keyboard) with its pointer options and button table.
+// The PC control page: the controller as mouse and keyboard, with its pointer options and button table.
 public sealed partial class MappingViewModel : ObservableObject
 {
 	private static readonly (Buttons Button, string Label)[] MappableButtons =

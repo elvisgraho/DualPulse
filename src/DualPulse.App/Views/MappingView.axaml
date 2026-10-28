@@ -3,6 +3,12 @@
              xmlns:vm="using:DualPulse.App.ViewModels"
              x:Class="DualPulse.App.Views.MappingView"
              x:DataType="vm:MappingViewModel">
+  <UserControl.Styles>
+    <!-- Switches keep their accent colour when disabled; fading the whole card shows it's inactive. -->
+    <Style Selector="Border.card:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+  </UserControl.Styles>
   <ScrollViewer>
     <!-- Content fills the width up to 720 px and stays left-aligned. -->
     <Grid>
@@ -11,11 +17,10 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
     <StackPanel Spacing="16" Margin="0,0,16,0">
-      <TextBlock Classes="title" Text="Mapping" />
+      <TextBlock Classes="title" Text="PC control" />
 
       <Border Classes="card">
         <StackPanel Spacing="16">
-          <TextBlock Classes="caption" Text="PC CONTROL" />
           <Grid ColumnDefinitions="*,16,Auto">
             <StackPanel Spacing="2">
               <TextBlock Text="Use the controller as mouse and keyboard" />
@@ -29,10 +34,13 @@
             <TextBlock VerticalAlignment="Center" Classes="secondary" Text="Status" />
             <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" />
           </Grid>
+          <TextBlock Classes="caption" TextWrapping="Wrap" IsVisible="{Binding !PcControlOn}"
+                     Text="Turn it on to change the settings below." />
         </StackPanel>
       </Border>
 
-      <Border Classes="card">
+      <!-- The settings below only act while PC control is on, so they are greyed out while it's off. -->
+      <Border Classes="card" IsEnabled="{Binding PcControlOn}">
         <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="POINTER" />
           <Grid ColumnDefinitions="*,16,Auto">
@@ -65,7 +73,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card">
+      <Border Classes="card" IsEnabled="{Binding PcControlOn}">
         <StackPanel Spacing="16">
           <TextBlock Classes="caption" Text="HOLD LAYERS" />
           <Grid ColumnDefinitions="*,16,Auto">
@@ -87,7 +95,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card">
+      <Border Classes="card" IsEnabled="{Binding PcControlOn}">
         <StackPanel Spacing="12">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Classes="caption" VerticalAlignment="Center" Text="BUTTONS" />
